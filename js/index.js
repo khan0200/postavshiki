@@ -494,6 +494,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       tableBody.appendChild(tr);
     });
+  }
 
   // Sorting columns triggers
   document.querySelectorAll('.sortable-header').forEach(header => {
