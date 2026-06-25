@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Supplier Management - Parts Management</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Sticky Navbar -->
+  <nav class="navbar navbar-expand-lg sticky-top bg-body-tertiary">
+    <div class="container-fluid px-4">
+      <a class="navbar-brand d-flex align-items-center fw-bold text-uppercase" href="index.html">
+        <i class="bi bi-gear-fill text-primary me-2"></i>
+        <span>Parts Receiving</span>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link px-3" href="index.html">
+              <i class="bi bi-journal-plus me-1"></i> Register
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link px-3 active" href="supplier.html">
+              <i class="bi bi-building-gear me-1"></i> Suppliers
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link px-3" href="settings.html">
+              <i class="bi bi-sliders2 me-1"></i> Settings
+            </a>
+          </li>
+        </ul>
+        <div class="d-flex align-items-center">
+          <button class="btn btn-outline-secondary btn-sm me-2" id="theme-toggle-btn" title="Toggle Theme">
+            <i class="bi bi-moon-stars-fill"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="container-fluid px-4 py-4">
+    <div class="row g-4">
+      
+      <!-- Left Panel: Suppliers List -->
+      <div class="col-xl-2 col-lg-3">
+        <div class="card border-0 shadow-sm h-100 position-relative">
+          <!-- Spinner overlay -->
+          <div class="loading-overlay" id="supplier-list-spinner">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="card-title mb-0 d-flex align-items-center fw-bold">
+              <i class="bi bi-buildings me-2 text-primary"></i>Suppliers
+            </h6>
+            <div class="d-flex gap-1">
+              <button class="btn btn-primary btn-sm px-2.5" id="btn-add-supplier">
+                <i class="bi bi-plus-lg me-1"></i>Add
+              </button>
+            </div>
+          </div>
+          <div class="card-body p-3">
+            <!-- Search Suppliers -->
+            <div class="input-group mb-3">
+              <span class="input-group-text bg-transparent border-end-0">
+                <i class="bi bi-search text-muted"></i>
+              </span>
+              <input type="text" class="form-control border-start-0 ps-0" id="supplier-search" placeholder="Search suppliers...">
+            </div>
+
+            <!-- List container -->
+            <div class="list-group list-group-flush overflow-y-auto scroll-height-suppliers" id="suppliers-list">
+              <!-- Populated dynamically via JS -->
+            </div>
+            
+            <div id="supplier-list-empty" class="text-center py-5 d-none">
+              <i class="bi bi-building-dash text-muted fs-2"></i>
+              <p class="text-muted mt-2 small">No suppliers found.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Panel: Details Tabs -->
+      <div class="col-xl-10 col-lg-9">
+        <!-- Active Supplier Card Container -->
+        <div class="card border-0 shadow-sm h-100 position-relative" id="supplier-detail-card">
+          <!-- Spinner overlay -->
+          <div class="loading-overlay" id="supplier-detail-spinner">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          
+          <!-- Card Header / Title -->
+          <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <div>
+              <span class="text-muted small text-uppercase fw-semibold">Supplier Dashboard</span>
+              <h4 class="mb-0 fw-bold text-primary" id="detail-supplier-name">Select a Supplier</h4>
+            </div>
+            <div class="d-flex gap-2" id="supplier-actions-group">
+              <!-- Edit / Delete supplier buttons (visible when a supplier is selected) -->
+              <button class="btn btn-outline-secondary btn-sm" id="btn-edit-supplier" disabled>
+                <i class="bi bi-pencil-fill me-1"></i>Rename
+              </button>
+              <button class="btn btn-outline-danger btn-sm" id="btn-delete-supplier" disabled>
+                <i class="bi bi-trash-fill me-1"></i>Delete
+              </button>
+            </div>
+          </div>
+
+          <!-- Tabs Navigation -->
+          <div class="bg-body-tertiary border-bottom px-3">
+            <ul class="nav nav-tabs border-bottom-0" id="supplierTabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active py-2.5" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-tab-pane" type="button" role="tab" aria-controls="history-tab-pane" aria-selected="true">
+                  <i class="bi bi-clock-history me-1"></i>History
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link py-2.5" id="parts-tab" data-bs-toggle="tab" data-bs-target="#parts-tab-pane" type="button" role="tab" aria-controls="parts-tab-pane" aria-selected="false">
+                  <i class="bi bi-boxes me-1"></i>Parts List
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link py-2.5" id="charts-tab" data-bs-toggle="tab" data-bs-target="#charts-tab-pane" type="button" role="tab" aria-controls="charts-tab-pane" aria-selected="false">
+                  <i class="bi bi-bar-chart-line me-1"></i>Reports & Stats
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Tabs Content -->
+          <div class="card-body tab-content" id="supplierTabsContent">
+            
+            <!-- TAB 1: History -->
+            <div class="tab-pane fade show active" id="history-tab-pane" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0">Delivery History</h6>
+                <div class="input-group input-group-sm" style="max-width: 250px;">
+                  <span class="input-group-text bg-transparent border-end-0">
+                    <i class="bi bi-search text-muted"></i>
+                  </span>
+                  <input type="text" class="form-control border-start-0 ps-0" id="history-search" placeholder="Search history...">
+                </div>
+              </div>
+
+              <div class="table-responsive scroll-height-detail-table">
+                <table class="table table-hover align-middle" id="history-table">
+                  <thead>
+                    <tr>
+                      <th scope="col" class="sortable-header" data-sort="date">Date</th>
+                      <th scope="col" class="sortable-header" data-sort="fn">F/N (PO)</th>
+                      <th scope="col" class="sortable-header" data-sort="detailId">Detail ID</th>
+                      <th scope="col" class="sortable-header" data-sort="detailName">Detail Name</th>
+                      <th scope="col" class="sortable-header text-end" data-sort="quantity">Qty</th>
+                      <th scope="col" class="sortable-header text-end" data-sort="checkedQuantity">Checked</th>
+                      <th scope="col" class="sortable-header text-end" data-sort="returnedQuantity">Returned</th>
+                      <th scope="col" class="sortable-header" data-sort="inspectorName">Inspector</th>
+                    </tr>
+                  </thead>
+                  <tbody id="history-table-body">
+                    <!-- Loaded dynamically -->
+                  </tbody>
+                </table>
+                <div id="history-empty" class="text-center py-5 d-none">
+                  <i class="bi bi-receipt text-muted fs-3"></i>
+                  <p class="text-muted mt-2 small">No delivery history recorded for this supplier.</p>
+                </div>
+              </div>
+
+              <!-- Pagination -->
+              <div class="d-flex justify-content-between align-items-center mt-3" id="history-pager-bar">
+                <span class="small text-muted" id="history-info-summary">Showing 0 to 0 of 0 entries</span>
+                <nav>
+                  <ul class="pagination pagination-sm mb-0" id="history-pagination"></ul>
+                </nav>
+              </div>
+            </div>
+
+            <!-- TAB 2: Parts List -->
+            <div class="tab-pane fade" id="parts-tab-pane" role="tabpanel" aria-labelledby="parts-tab" tabindex="0">
+              <div class="d-flex justify-content-between flex-wrap gap-2 align-items-center mb-3">
+                <h6 class="fw-bold mb-0">Produced Parts Catalog</h6>
+                <div class="d-flex gap-2">
+                  <div class="input-group input-group-sm" style="max-width: 220px;">
+                    <span class="input-group-text bg-transparent border-end-0">
+                      <i class="bi bi-search text-muted"></i>
+                    </span>
+                    <input type="text" class="form-control border-start-0 ps-0" id="parts-search" placeholder="Search parts...">
+                  </div>
+                  <button class="btn btn-success btn-sm" id="btn-add-part">
+                    <i class="bi bi-plus-lg me-1"></i>Add New Part
+                  </button>
+                </div>
+              </div>
+
+              <div class="table-responsive scroll-height-detail-table">
+                <table class="table table-hover align-middle" id="parts-table">
+                  <thead>
+                    <tr>
+                      <th scope="col" class="sortable-header" data-sort="detailId">Detail ID</th>
+                      <th scope="col" class="sortable-header" data-sort="detailName">Detail Name</th>
+                      <th scope="col" class="sortable-header" data-sort="createdAt">Created Date</th>
+                      <th scope="col" class="text-center" style="width: 150px;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="parts-table-body">
+                    <!-- Loaded dynamically -->
+                  </tbody>
+                </table>
+                <div id="parts-empty" class="text-center py-5 d-none">
+                  <i class="bi bi-boxes text-muted fs-3"></i>
+                  <p class="text-muted mt-2 small">No parts registered for this supplier.</p>
+                </div>
+              </div>
+
+              <!-- Pagination -->
+              <div class="d-flex justify-content-between align-items-center mt-3" id="parts-pager-bar">
+                <span class="small text-muted" id="parts-info-summary">Showing 0 to 0 of 0 entries</span>
+                <nav>
+                  <ul class="pagination pagination-sm mb-0" id="parts-pagination"></ul>
+                </nav>
+              </div>
+            </div>
+
+            <!-- TAB 3: Charts -->
+            <div class="tab-pane fade" id="charts-tab-pane" role="tabpanel" aria-labelledby="charts-tab" tabindex="0">
+              <!-- Filter Selectors -->
+              <div class="d-flex align-items-center gap-2 mb-4 bg-body-secondary p-3 rounded-3 border">
+                <div class="d-flex align-items-center gap-1.5">
+                  <label for="chart-year" class="small fw-semibold text-muted text-nowrap me-1">Year:</label>
+                  <select class="form-select form-select-sm" id="chart-year" style="width: 100px;">
+                    <!-- Auto-populated years -->
+                  </select>
+                </div>
+                <div class="d-flex align-items-center gap-1.5">
+                  <label for="chart-month" class="small fw-semibold text-muted text-nowrap me-1">Month Details:</label>
+                  <select class="form-select form-select-sm" id="chart-month" style="width: 130px;">
+                    <option value="all" selected>All Months</option>
+                    <option value="0">January</option>
+                    <option value="1">February</option>
+                    <option value="2">March</option>
+                    <option value="3">April</option>
+                    <option value="4">May</option>
+                    <option value="5">June</option>
+                    <option value="6">July</option>
+                    <option value="7">August</option>
+                    <option value="8">September</option>
+                    <option value="9">October</option>
+                    <option value="10">November</option>
+                    <option value="11">December</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row g-4">
+                <div class="col-lg-6">
+                  <div class="card p-3 shadow-sm border border-light-subtle h-100">
+                    <h6 class="fw-bold mb-3 d-flex align-items-center">
+                      <i class="bi bi-bar-chart-fill text-primary me-2"></i>Incoming Quantity
+                    </h6>
+                    <div class="chart-container">
+                      <canvas id="incomingChart"></canvas>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="card p-3 shadow-sm border border-light-subtle h-100">
+                    <h6 class="fw-bold mb-3 d-flex align-items-center">
+                      <i class="bi bi-graph-up-arrow text-danger me-2"></i>Returned Quantity
+                    </h6>
+                    <div class="chart-container">
+                      <canvas id="returnedChart"></canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </main>
+
+  <!-- MODALS -->
+
+  <!-- Add/Rename Supplier Modal -->
+  <div class="modal fade" id="supplierModal" tabindex="-1" aria-labelledby="supplierModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <form id="supplier-form" novalidate>
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold" id="supplierModalLabel">Add New Supplier</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="edit-supplier-id">
+            <div class="mb-3">
+              <label for="supplier-name-input" class="form-label small fw-semibold">Supplier Company Name</label>
+              <input type="text" class="form-control" id="supplier-name-input" placeholder="e.g. Apex Industrial Ltd." required>
+              <div class="invalid-feedback">Company name is required.</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="btn-save-supplier-submit">Save Supplier</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Part Modal -->
+  <div class="modal fade" id="partModal" tabindex="-1" aria-labelledby="partModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <form id="part-form" novalidate>
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold" id="partModalLabel">Add Supplier Part</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="edit-part-id">
+            <div class="mb-3">
+              <label for="part-detail-id-input" class="form-label small fw-semibold">Detail ID (Part Number)</label>
+              <input type="text" class="form-control" id="part-detail-id-input" placeholder="e.g. PN-1002" required>
+              <div class="invalid-feedback">Valid Detail ID is required.</div>
+            </div>
+            <div class="mb-3">
+              <label for="part-detail-name-input" class="form-label small fw-semibold">Detail Name (Description)</label>
+              <input type="text" class="form-control" id="part-detail-name-input" placeholder="e.g. Hydraulic Valve M10" required>
+              <div class="invalid-feedback">Detail description is required.</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="btn-save-part-submit">Save Part</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transfer Part Modal -->
+  <div class="modal fade" id="transferModal" tabindex="-1" aria-labelledby="transferModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <form id="transfer-form" novalidate>
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold text-primary" id="transferModalLabel">
+              <i class="bi bi-arrow-left-right me-2"></i>Transfer Production Rights
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="transfer-part-id">
+            <p class="small text-secondary mb-3">
+              You are transferring part <strong id="transfer-part-display" class="text-dark"></strong> to another supplier. Future receipts of this Part Number will belong to the destination supplier. Historical delivery records will remain associated with the original supplier.
+            </p>
+            <div class="mb-3">
+              <label for="transfer-destination-select" class="form-label small fw-semibold">Destination Supplier</label>
+              <select class="form-select" id="transfer-destination-select" required>
+                <option value="" selected disabled>Select Destination...</option>
+              </select>
+              <div class="invalid-feedback">Please select a destination supplier.</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Confirm Transfer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- Bootstrap 5 Bundle JS (includes Popper) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+
+  <!-- Firebase Compat SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <!-- Scripts -->
+  <script src="js/storage.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/supplier.js"></script>
+</body>
+</html>
