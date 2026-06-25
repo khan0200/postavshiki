@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           parts.push(cmt.text);
         }
-        commentInput.value = parts.filter(p => p !== '').join(', ') + ', ';
+        commentInput.value = parts.filter(p => p !== '').join(', ');
         
         // Re-render full list for next open
         renderCommentPresets('');
