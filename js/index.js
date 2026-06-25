@@ -48,26 +48,25 @@ document.addEventListener('DOMContentLoaded', () => {
   returnedQtyInput.value = '0';
 
   // --- COMMENT PRESETS DROPDOWN ---
-  // Uses a Bootstrap dropdown menu (<ul><li><a>...) driven by its own show()/hide()
-  // API, which is a different shape than the `.custom-dropdown-menu` widget used by
-  // the Detail ID search box below - so this stays a small dedicated renderer rather
-  // than forcing it through UI.createSearchableDropdown's <div> item markup.
+  // Renders comment presets into the custom dropdown menu element.
   function renderCommentPresets(filter = '') {
     commentPresetsList.innerHTML = '';
     const filtered = commentPresets.filter(cmt => cmt.text.toLowerCase().includes(filter.toLowerCase()));
 
     if (filtered.length === 0) {
-      const li = document.createElement('li');
-      li.innerHTML = '<span class="dropdown-item-text text-muted small">No matches</span>';
-      commentPresetsList.appendChild(li);
+      const empty = document.createElement('div');
+      empty.className = 'px-3 py-2 text-muted small';
+      empty.textContent = 'No matches';
+      commentPresetsList.appendChild(empty);
       return;
     }
 
     const fragment = document.createDocumentFragment();
     filtered.forEach(cmt => {
-      const li = document.createElement('li');
-      li.innerHTML = `<a class="dropdown-item" href="#">${Utils.escapeHtml(cmt.text)}</a>`;
-      li.querySelector('a').addEventListener('click', (e) => {
+      const el = document.createElement('div');
+      el.className = 'custom-dropdown-item';
+      el.textContent = cmt.text;
+      el.addEventListener('click', (e) => {
         e.preventDefault();
 
         const parts = commentInput.value.split(',').map(p => p.trim());
@@ -79,15 +78,10 @@ document.addEventListener('DOMContentLoaded', () => {
         commentInput.value = parts.filter(p => p !== '').join(', ');
 
         renderCommentPresets('');
-
-        const dropdownToggle = document.getElementById('presets-dropdown-btn');
-        if (dropdownToggle) {
-          bootstrap.Dropdown.getOrCreateInstance(dropdownToggle).hide();
-        }
-
+        commentPresetsList.classList.remove('show');
         commentInput.focus();
       });
-      fragment.appendChild(li);
+      fragment.appendChild(el);
     });
     commentPresetsList.appendChild(fragment);
   }
@@ -140,28 +134,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderCommentPresets(query);
 
-    const dropdownToggle = document.getElementById('presets-dropdown-btn');
-    if (dropdownToggle) {
-      const dropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
+    const filtered = commentPresets.filter(cmt =>
+      cmt.text.toLowerCase().includes(query.toLowerCase())
+    );
 
-      const filtered = commentPresets.filter(cmt =>
-        cmt.text.toLowerCase().includes(query.toLowerCase())
-      );
-
-      if (query.length > 0 && filtered.length > 0) {
-        dropdown.show();
-      } else {
-        dropdown.hide();
-      }
+    if (query.length > 0 && filtered.length > 0) {
+      commentPresetsList.classList.add('show');
+    } else {
+      commentPresetsList.classList.remove('show');
     }
   });
 
   const dropdownToggle = document.getElementById('presets-dropdown-btn');
   if (dropdownToggle) {
-    dropdownToggle.addEventListener('show.bs.dropdown', () => {
+    dropdownToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
       const parts = commentInput.value.split(',');
       const query = parts.length > 0 ? parts[parts.length - 1].trim() : '';
       renderCommentPresets(query);
+      commentPresetsList.classList.toggle('show');
     });
   }
 
@@ -180,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
     onSelect: (part) => {
       detailSearch.value = part.detailId;
       detailIdHidden.value = part.detailId;
-      detailNameInput.value = part.detailName;
+      detailNameInput.textContent = part.detailName;
       detailDropdownMenu.classList.remove('show');
       detailSearch.classList.remove('is-invalid');
     },
@@ -203,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Reset Part fields
     detailSearch.value = '';
     detailIdHidden.value = '';
-    detailNameInput.value = '';
+    detailNameInput.textContent = '';
 
     if (selectedSupplierId) {
       detailSearch.disabled = true;
@@ -237,13 +228,23 @@ document.addEventListener('DOMContentLoaded', () => {
   detailSearch.addEventListener('input', () => {
     // Hidden ID becomes invalid when user is actively typing, unless it matches exactly
     detailIdHidden.value = '';
-    detailNameInput.value = '';
+    detailNameInput.textContent = '';
+
+    const query = detailSearch.value.trim().toUpperCase();
+
+    // Suggest first matching part name
+    if (query.length > 0) {
+      const firstMatch = activeParts.find(p => p.detailId.toUpperCase().includes(query));
+      if (firstMatch) {
+        detailNameInput.textContent = firstMatch.detailName;
+      }
+    }
 
     // Check for exact match
-    const exactMatch = activeParts.find(p => p.detailId.toUpperCase() === detailSearch.value.trim().toUpperCase());
+    const exactMatch = activeParts.find(p => p.detailId.toUpperCase() === query);
     if (exactMatch) {
       detailIdHidden.value = exactMatch.detailId;
-      detailNameInput.value = exactMatch.detailName;
+      detailNameInput.textContent = exactMatch.detailName;
     }
 
     renderDetailDropdownMenu(detailSearch.value);
@@ -252,10 +253,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // Hide dropdown menu on click outside (additional cleanup specific to this page:
   // clear a non-exact-match search value, on top of the shared component's hide logic).
   document.addEventListener('click', (e) => {
+    // Hide Detail ID dropdown on outside click
     if (!e.target.closest('.custom-dropdown-container')) {
       if (!detailIdHidden.value) {
         detailSearch.value = '';
       }
+    }
+    // Hide Comment presets dropdown on outside click
+    if (!e.target.closest('#rec-comment') && !e.target.closest('#presets-dropdown-btn') && !e.target.closest('#predefined-comments-list')) {
+      commentPresetsList.classList.remove('show');
     }
   });
 
@@ -277,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
     detailSearch.disabled = true;
     detailSearch.placeholder = 'Select supplier first...';
     detailIdHidden.value = '';
-    detailNameInput.value = '';
+    detailNameInput.textContent = '';
 
     qtyInput.value = '';
     commentInput.value = '';
@@ -392,7 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
       supplierId: supplierSelect.value,
       supplierName: supplierSelect.options[supplierSelect.selectedIndex].textContent,
       detailId: detailIdHidden.value,
-      detailName: detailNameInput.value,
+      detailName: detailNameInput.textContent,
       quantity: qty,
       checkedQuantity: checked,
       returnedQuantity: returned,
@@ -475,17 +481,40 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       tr.className = borderClass;
 
+      const displayDate = (() => {
+        if (!rec.date) return '';
+        if (rec.createdAt) {
+          try {
+            const dateObj = new Date(rec.createdAt);
+            if (!isNaN(dateObj.getTime())) {
+              const hours = String(dateObj.getHours()).padStart(2, '0');
+              const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+              return `${rec.date} ${hours}:${minutes}`;
+            }
+          } catch (e) {
+            // ignore and fallback
+          }
+        }
+        return rec.date;
+      })();
+
       tr.innerHTML = `
-        <td class="small fw-semibold text-nowrap">${Utils.escapeHtml(rec.date)}</td>
-        <td><code class="text-secondary fw-semibold">${Utils.escapeHtml(rec.fn)}</code></td>
+        <td>
+          <div class="mb-0"><code class="text-secondary fw-semibold">${Utils.escapeHtml(rec.fn)}</code></div>
+          <div class="text-muted small text-nowrap" style="font-size: 0.75rem;">${Utils.escapeHtml(displayDate)}</div>
+        </td>
         <td class="text-truncate" style="max-width: 140px;" title="${Utils.escapeHtml(rec.supplierName)}">${Utils.escapeHtml(rec.supplierName)}</td>
-        <td><span class="badge bg-light text-dark font-monospace">${Utils.escapeHtml(rec.detailId)}</span></td>
-        <td class="text-truncate" style="max-width: 140px;" title="${Utils.escapeHtml(rec.detailName)}">${Utils.escapeHtml(rec.detailName)}</td>
+        <td>
+          <div class="mb-0"><span class="badge bg-primary text-white font-monospace">${Utils.escapeHtml(rec.detailId)}</span></div>
+          <div class="text-muted small text-wrap" style="font-size: 0.75rem; max-width: 200px;">${Utils.escapeHtml(rec.detailName)}</div>
+        </td>
         <td class="text-end fw-semibold">${rec.quantity}</td>
         <td class="text-end text-success">${rec.checkedQuantity}</td>
         <td class="text-end text-danger">${rec.returnedQuantity}</td>
         <td class="small">${Utils.escapeHtml(rec.inspectorName)}</td>
-        <td class="text-truncate small" style="max-width: 120px;" title="${Utils.escapeHtml(rec.comment)}">${Utils.escapeHtml(rec.comment)}</td>
+        <td>
+          <span class="badge rounded-pill ${rec.comment && rec.comment.trim().toUpperCase() === 'OK' ? 'bg-success' : 'bg-danger'} text-white text-wrap">${Utils.escapeHtml(rec.comment)}</span>
+        </td>
       `;
 
       return tr;

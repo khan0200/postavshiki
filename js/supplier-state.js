@@ -33,6 +33,7 @@ window.SupplierPage = {
   historyInfoSummary: null,
   historyPagination: null,
   historyPagerBar: null,
+  historyRecsCount: null,
 
   // --- Tab - Parts ---
   partsSearchInput: null,
@@ -79,6 +80,13 @@ window.SupplierPage = {
   editRecReturned: null,
   editRecComment: null,
 
+  btnImportCsv: null,
+  csvFileInput: null,
+  importProgressModal: null,
+  importProgressStatus: null,
+  importProgressBar: null,
+  importProgressDetail: null,
+
   // --- State ---
   activeSupplierId: null,
   activeTab: 'history', // history | parts | charts
@@ -112,6 +120,7 @@ window.SupplierPage = {
     this.historyInfoSummary = document.getElementById('history-info-summary');
     this.historyPagination = document.getElementById('history-pagination');
     this.historyPagerBar = document.getElementById('history-pager-bar');
+    this.historyRecsCount = document.getElementById('history-recs-count');
 
     this.partsSearchInput = document.getElementById('parts-search');
     this.partsTableBody = document.getElementById('parts-table-body');
@@ -158,6 +167,17 @@ window.SupplierPage = {
     this.editRecChecked = document.getElementById('edit-rec-checked');
     this.editRecReturned = document.getElementById('edit-rec-returned');
     this.editRecComment = document.getElementById('edit-rec-comment');
+
+    this.btnImportCsv = document.getElementById('btn-import-csv');
+    this.csvFileInput = document.getElementById('csv-file-input');
+    
+    const importModalElem = document.getElementById('importProgressModal');
+    if (importModalElem) {
+      this.importProgressModal = new bootstrap.Modal(importModalElem);
+    }
+    this.importProgressStatus = document.getElementById('import-progress-status');
+    this.importProgressBar = document.getElementById('import-progress-bar');
+    this.importProgressDetail = document.getElementById('import-progress-detail');
   },
 
   /**

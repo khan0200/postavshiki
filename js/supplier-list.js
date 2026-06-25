@@ -34,18 +34,8 @@ window.SupplierList = (function () {
         return a.name.localeCompare(b.name);
       });
 
-      // Record counts are only needed for the badge - fetch per-supplier counts
-      // via the cached per-supplier records lookups already used by the History/
-      // Charts tabs, instead of always downloading the entire records collection
-      // just to render directory badges.
-      const recordCountEntries = await Promise.all(
-        sorted.map(sup => ReceivingRepository.getBySupplier(sup.id).then(recs => [sup.id, recs.length]))
-      );
-      const recordCountsBySupplier = new Map(recordCountEntries);
-
       Utils.renderRows(P.suppliersListContainer, sorted, (sup) => {
         const supPartsCount = parts.filter(p => p.supplierId === sup.id).length;
-        const supRecordsCount = recordCountsBySupplier.get(sup.id);
 
         const item = document.createElement('a');
         item.href = '#';
@@ -57,11 +47,8 @@ window.SupplierList = (function () {
             <i class="bi bi-chevron-right small text-muted"></i>
           </div>
           <div class="d-flex gap-2 mt-2">
-            <span class="badge bg-secondary-subtle text-secondary small border rounded-pill">
+            <span class="badge badge-parts small rounded-pill">
               <i class="bi bi-box me-1"></i>${supPartsCount} Parts
-            </span>
-            <span class="badge bg-secondary-subtle text-secondary small border rounded-pill">
-              <i class="bi bi-clock-history me-1"></i>${supRecordsCount} Recs
             </span>
           </div>
         `;
@@ -89,6 +76,7 @@ window.SupplierList = (function () {
         P.detailSupplierName.textContent = activeSupplier.name;
         P.btnEditSupplier.disabled = false;
         P.btnDeleteSupplier.disabled = false;
+        if (P.btnImportCsv) P.btnImportCsv.disabled = false;
 
         P.historyState.currentPage = 1;
         P.partsState.currentPage = 1;
@@ -109,8 +97,10 @@ window.SupplierList = (function () {
       P.detailSupplierName.textContent = 'Select a Supplier';
       P.btnEditSupplier.disabled = true;
       P.btnDeleteSupplier.disabled = true;
+      if (P.btnImportCsv) P.btnImportCsv.disabled = true;
+      if (P.historyRecsCount) P.historyRecsCount.textContent = '';
 
-      P.historyTableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">Select a supplier from directory</td></tr>';
+      P.historyTableBody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">Select a supplier from directory</td></tr>';
       P.partsTableBody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">Select a supplier from directory</td></tr>';
       P.historyPagerBar.classList.add('d-none');
       P.partsPagerBar.classList.add('d-none');

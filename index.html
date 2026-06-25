@@ -52,11 +52,7 @@
 
   <!-- Main Container -->
   <main class="container-fluid px-4 py-4">
-    <!-- Header -->
-    <div class="mb-4">
-      <h1 class="h3 fw-bold mb-1">Incoming Parts Registration</h1>
-      <p class="text-muted mb-0">Record and inspect quality control parameters for incoming deliveries</p>
-    </div>
+
 
     <div class="row g-4">
       <!-- Registration Form Column -->
@@ -109,10 +105,8 @@
                       <!-- Populated dynamically via JS -->
                     </div>
                   </div>
-                </div>
-                <div class="form-col-detail-name col-sm-12">
-                  <label for="rec-detail-name" class="form-label small fw-semibold">Detail Name</label>
-                  <input type="text" class="form-control bg-body-secondary text-muted" id="rec-detail-name" placeholder="Auto-populated" readonly>
+                  <!-- Ghost text for Detail Name -->
+                  <div class="text-muted small mt-1 ps-1" id="rec-detail-name" style="font-size: 0.8rem; min-height: 1.2rem;"></div>
                 </div>
               </div>
 
@@ -142,12 +136,12 @@
                 </div>
                 <div class="form-col-comments col-sm-6 col-12">
                   <label for="rec-comment" class="form-label small fw-semibold">Comments</label>
-                  <div class="input-group">
+                  <div class="input-group position-relative">
                     <input type="text" class="form-control" id="rec-comment" placeholder="QC notes, scratches, issues..." autocomplete="off">
-                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="presets-dropdown-btn">Presets</button>
-                    <ul class="dropdown-menu dropdown-menu-end" id="predefined-comments-list">
+                    <button class="btn btn-outline-secondary" type="button" id="presets-dropdown-btn">Presets</button>
+                    <div class="custom-dropdown-menu" id="predefined-comments-list">
                       <!-- Populated dynamically via JS -->
-                    </ul>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -182,11 +176,11 @@
             
             <!-- Table Search and Actions -->
             <div class="d-flex align-items-center gap-2">
-              <div class="input-group input-group-sm" style="max-width: 250px;">
-                <span class="input-group-text bg-transparent border-end-0">
-                  <i class="bi bi-search text-muted"></i>
+              <div class="premium-search-group" style="max-width: 250px;">
+                <span class="premium-search-icon">
+                  <i class="bi bi-search"></i>
                 </span>
-                <input type="text" class="form-control border-start-0 ps-0" id="table-search" placeholder="Search PO, part, supplier...">
+                <input type="text" class="premium-search-input" id="table-search" placeholder="Search PO, part, supplier...">
               </div>
             </div>
           </div>
@@ -196,11 +190,9 @@
               <table class="table table-hover align-middle" id="records-table">
                 <thead>
                   <tr>
-                    <th scope="col" class="sortable-header" data-sort="date">Date</th>
                     <th scope="col" class="sortable-header" data-sort="fn">F/N (PO)</th>
                     <th scope="col" class="sortable-header" data-sort="supplierName">Supplier</th>
                     <th scope="col" class="sortable-header" data-sort="detailId">Detail ID</th>
-                    <th scope="col" class="sortable-header" data-sort="detailName">Detail Name</th>
                     <th scope="col" class="sortable-header text-end" data-sort="quantity">Qty</th>
                     <th scope="col" class="sortable-header text-end" data-sort="checkedQuantity">Checked</th>
                     <th scope="col" class="sortable-header text-end" data-sort="returnedQuantity">Returned</th>

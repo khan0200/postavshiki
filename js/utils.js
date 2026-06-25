@@ -59,7 +59,11 @@ window.Utils = {
 
       if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
       if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
+
+      // Secondary fallback: order by createdAt descending (most recent first)
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return timeB - timeA;
     });
     return array;
   },
@@ -129,17 +133,52 @@ window.Utils = {
     });
     fragment.appendChild(prevLi);
 
-    for (let i = 1; i <= totalPages; i++) {
-      const li = document.createElement('li');
-      li.className = `page-item ${stateObj.currentPage === i ? 'active' : ''}`;
-      li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
-      li.addEventListener('click', (e) => {
-        e.preventDefault();
-        stateObj.currentPage = i;
-        renderCallback();
-      });
-      fragment.appendChild(li);
+    // Determine window of pages around current page
+    let startPage = Math.max(1, stateObj.currentPage - 2);
+    let endPage = Math.min(totalPages, stateObj.currentPage + 2);
+
+    if (stateObj.currentPage <= 3) {
+      endPage = Math.min(totalPages, 5);
     }
+    if (stateObj.currentPage >= totalPages - 2) {
+      startPage = Math.max(1, totalPages - 4);
+    }
+
+    const pages = [];
+    pages.push(1);
+
+    if (startPage > 2) {
+      pages.push('...');
+    }
+
+    for (let i = Math.max(2, startPage); i <= Math.min(totalPages - 1, endPage); i++) {
+      pages.push(i);
+    }
+
+    if (endPage < totalPages - 1) {
+      pages.push('...');
+    }
+
+    if (totalPages > 1) {
+      pages.push(totalPages);
+    }
+
+    pages.forEach(page => {
+      const li = document.createElement('li');
+      if (page === '...') {
+        li.className = 'page-item disabled';
+        li.innerHTML = `<span class="page-link">&hellip;</span>`;
+      } else {
+        li.className = `page-item ${stateObj.currentPage === page ? 'active' : ''}`;
+        li.innerHTML = `<a class="page-link" href="#">${page}</a>`;
+        li.addEventListener('click', (e) => {
+          e.preventDefault();
+          stateObj.currentPage = page;
+          renderCallback();
+        });
+      }
+      fragment.appendChild(li);
+    });
 
     const nextLi = document.createElement('li');
     nextLi.className = `page-item ${stateObj.currentPage === totalPages ? 'disabled' : ''}`;

@@ -76,12 +76,11 @@
             </div>
           </div>
           <div class="card-body p-3">
-            <!-- Search Suppliers -->
-            <div class="input-group mb-3">
-              <span class="input-group-text bg-transparent border-end-0">
-                <i class="bi bi-search text-muted"></i>
+            <div class="premium-search-group mb-3">
+              <span class="premium-search-icon">
+                <i class="bi bi-search"></i>
               </span>
-              <input type="text" class="form-control border-start-0 ps-0" id="supplier-search" placeholder="Search suppliers...">
+              <input type="text" class="premium-search-input" id="supplier-search" placeholder="Search suppliers...">
             </div>
 
             <!-- List container -->
@@ -152,12 +151,21 @@
             <!-- TAB 1: History -->
             <div class="tab-pane fade show active" id="history-tab-pane" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
               <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="fw-bold mb-0">Delivery History</h6>
-                <div class="input-group input-group-sm" style="max-width: 250px;">
-                  <span class="input-group-text bg-transparent border-end-0">
-                    <i class="bi bi-search text-muted"></i>
-                  </span>
-                  <input type="text" class="form-control border-start-0 ps-0" id="history-search" placeholder="Search history...">
+                <h6 class="fw-bold mb-0">
+                  <span>Delivery History</span>
+                  <span class="text-secondary fw-normal ms-1" id="history-recs-count" style="font-size: 0.9rem;"></span>
+                </h6>
+                <div class="d-flex gap-2">
+                  <div class="premium-search-group" style="max-width: 250px;">
+                    <span class="premium-search-icon">
+                      <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" class="premium-search-input" id="history-search" placeholder="Search history...">
+                  </div>
+                  <button class="btn btn-outline-primary btn-sm text-nowrap" id="btn-import-csv">
+                    <i class="bi bi-filetype-csv me-1"></i>Import CSV
+                  </button>
+                  <input type="file" id="csv-file-input" accept=".csv" class="d-none">
                 </div>
               </div>
 
@@ -165,14 +173,13 @@
                 <table class="table table-hover align-middle" id="history-table">
                   <thead>
                     <tr>
-                      <th scope="col" class="sortable-header" data-sort="date">Date</th>
                       <th scope="col" class="sortable-header" data-sort="fn">F/N (PO)</th>
                       <th scope="col" class="sortable-header" data-sort="detailId">Detail ID</th>
-                      <th scope="col" class="sortable-header" data-sort="detailName">Detail Name</th>
                       <th scope="col" class="sortable-header text-end" data-sort="quantity">Qty</th>
                       <th scope="col" class="sortable-header text-end" data-sort="checkedQuantity">Checked</th>
                       <th scope="col" class="sortable-header text-end" data-sort="returnedQuantity">Returned</th>
                       <th scope="col" class="sortable-header" data-sort="inspectorName">Inspector</th>
+                      <th scope="col">Comment</th>
                       <th scope="col" class="text-center">Action</th>
                     </tr>
                   </thead>
@@ -199,14 +206,14 @@
             <div class="tab-pane fade" id="parts-tab-pane" role="tabpanel" aria-labelledby="parts-tab" tabindex="0">
               <div class="d-flex justify-content-between flex-wrap gap-2 align-items-center mb-3">
                 <h6 class="fw-bold mb-0">Produced Parts Catalog</h6>
-                <div class="d-flex gap-2">
-                  <div class="input-group input-group-sm" style="max-width: 220px;">
-                    <span class="input-group-text bg-transparent border-end-0">
-                      <i class="bi bi-search text-muted"></i>
+                <div class="d-flex gap-2 align-items-center">
+                  <div class="premium-search-group" style="max-width: 220px;">
+                    <span class="premium-search-icon">
+                      <i class="bi bi-search"></i>
                     </span>
-                    <input type="text" class="form-control border-start-0 ps-0" id="parts-search" placeholder="Search parts...">
+                    <input type="text" class="premium-search-input" id="parts-search" placeholder="Search parts...">
                   </div>
-                  <button class="btn btn-success btn-sm" id="btn-add-part">
+                  <button class="btn btn-success btn-sm text-nowrap" id="btn-add-part">
                     <i class="bi bi-plus-lg me-1"></i>Add New Part
                   </button>
                 </div>
@@ -471,6 +478,29 @@
             <button type="submit" class="btn btn-primary">Save Changes</button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Progress Modal -->
+  <div class="modal fade" id="importProgressModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="importProgressModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-light">
+          <h5 class="modal-title fw-bold text-primary" id="importProgressModalLabel">
+            <i class="bi bi-upload me-2"></i>Importing CSV Data
+          </h5>
+        </div>
+        <div class="modal-body text-center py-4">
+          <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <h6 class="fw-bold mb-2" id="import-progress-status">Parsing CSV file...</h6>
+          <div class="progress mt-3" style="height: 10px;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" id="import-progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          <p class="text-muted small mt-2 mb-0" id="import-progress-detail">Initializing...</p>
+        </div>
       </div>
     </div>
   </div>

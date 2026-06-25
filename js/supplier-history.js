@@ -17,6 +17,10 @@ window.SupplierHistory = (function () {
         InspectorRepository.getAll()
       ]);
 
+      if (P.historyRecsCount) {
+        P.historyRecsCount.textContent = `(${supplierRecords.length} Recs)`;
+      }
+
       const inspectorsById = new Map(inspectors.map(i => [i.id, i.fullName]));
       let records = supplierRecords.map(rec => ({
         ...rec,
@@ -71,15 +75,39 @@ window.SupplierHistory = (function () {
         }
         tr.className = borderClass;
 
+        const displayDate = (() => {
+          if (!rec.date) return '';
+          if (rec.createdAt) {
+            try {
+              const dateObj = new Date(rec.createdAt);
+              if (!isNaN(dateObj.getTime())) {
+                const hours = String(dateObj.getHours()).padStart(2, '0');
+                const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+                return `${rec.date} ${hours}:${minutes}`;
+              }
+            } catch (e) {
+              // ignore and fallback
+            }
+          }
+          return rec.date;
+        })();
+
         tr.innerHTML = `
-          <td class="small fw-semibold text-nowrap">${Utils.escapeHtml(rec.date)}</td>
-          <td><code class="text-secondary fw-semibold">${Utils.escapeHtml(rec.fn)}</code></td>
-          <td><span class="badge bg-light text-dark font-monospace">${Utils.escapeHtml(rec.detailId)}</span></td>
-          <td class="text-truncate" style="max-width: 180px;" title="${Utils.escapeHtml(rec.detailName)}">${Utils.escapeHtml(rec.detailName)}</td>
+          <td>
+            <div class="mb-0"><code class="text-secondary fw-semibold">${Utils.escapeHtml(rec.fn)}</code></div>
+            <div class="text-muted small text-nowrap" style="font-size: 0.75rem;">${Utils.escapeHtml(displayDate)}</div>
+          </td>
+          <td>
+            <div class="mb-0"><span class="badge bg-primary text-white font-monospace">${Utils.escapeHtml(rec.detailId)}</span></div>
+            <div class="text-muted small text-wrap" style="font-size: 0.75rem; max-width: 200px;">${Utils.escapeHtml(rec.detailName)}</div>
+          </td>
           <td class="text-end fw-semibold">${rec.quantity}</td>
           <td class="text-end text-success">${rec.checkedQuantity}</td>
           <td class="text-end text-danger">${rec.returnedQuantity}</td>
           <td class="small">${Utils.escapeHtml(rec.inspectorName)}</td>
+          <td>
+            <span class="badge rounded-pill ${rec.comment && rec.comment.trim().toUpperCase() === 'OK' ? 'bg-success' : 'bg-danger'} text-white text-wrap">${Utils.escapeHtml(rec.comment)}</span>
+          </td>
           <td class="text-center text-nowrap">
             <button class="btn btn-outline-primary btn-sm border-0 py-0 px-1 me-1 edit-rec-btn" data-id="${rec.id}" aria-label="Edit record">
               <i class="bi bi-pencil-fill"></i>
@@ -175,6 +203,271 @@ window.SupplierHistory = (function () {
     }
   }
 
+  function parseCSV(text) {
+    const cleanText = text.startsWith('\ufeff') ? text.slice(1) : text;
+    const lines = [];
+    let row = [""];
+    let inQuotes = false;
+
+    for (let i = 0; i < cleanText.length; i++) {
+      const char = cleanText[i];
+      const nextChar = cleanText[i + 1];
+
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          row[row.length - 1] += '"';
+          i++; // skip next quote
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        row.push("");
+      } else if ((char === '\r' || char === '\n') && !inQuotes) {
+        if (char === '\r' && nextChar === '\n') {
+          i++;
+        }
+        lines.push(row);
+        row = [""];
+      } else {
+        row[row.length - 1] += char;
+      }
+    }
+    if (row.length > 1 || row[0] !== "") {
+      lines.push(row);
+    }
+    return lines;
+  }
+
+  async function handleCsvImport(file) {
+    if (!P.activeSupplierId) {
+      UI.showToast('Please select a supplier first.', 'error');
+      return;
+    }
+
+    const activeSupplier = await SupplierRepository.getById(P.activeSupplierId);
+    if (!activeSupplier) {
+      UI.showToast('Active supplier not found.', 'error');
+      return;
+    }
+    const activeSupplierName = activeSupplier.name;
+
+    const reader = new FileReader();
+    reader.onload = async function (e) {
+      const text = e.target.result;
+      
+      P.importProgressModal.show();
+      P.importProgressStatus.textContent = 'Parsing CSV file...';
+      P.importProgressBar.style.width = '0%';
+      P.importProgressBar.setAttribute('aria-valuenow', 0);
+      P.importProgressDetail.textContent = 'Starting parse...';
+
+      try {
+        const rawRows = parseCSV(text);
+        if (rawRows.length <= 1) {
+          throw new Error('CSV is empty or contains no data rows.');
+        }
+
+        const headers = rawRows[0].map(h => h.trim().toLowerCase());
+        const expected = ['sana', 'f/n', 'detal id', 'soni'];
+        const missing = expected.filter(exp => !headers.includes(exp));
+        if (missing.length > 0) {
+          throw new Error(`Invalid CSV structure. Missing columns: ${missing.join(', ')}`);
+        }
+
+        const sanaIndex = headers.indexOf('sana');
+        const fnIndex = headers.indexOf('f/n');
+        const detailIdIndex = headers.indexOf('detal id');
+        const soniIndex = headers.indexOf('soni');
+        const tekshirildiIndex = headers.indexOf('tekshirildi');
+        const qaytarildiIndex = headers.indexOf('qaytarildi');
+        const tekshirdiIndex = headers.indexOf('tekshirdi');
+        const izohIndex = headers.indexOf('izoh');
+
+        const dataRows = rawRows.slice(1).filter(row => 
+          row.length > Math.max(sanaIndex, fnIndex, detailIdIndex, soniIndex) && 
+          row[sanaIndex].trim() !== ''
+        );
+
+        if (dataRows.length === 0) {
+          throw new Error('No valid records found in the CSV.');
+        }
+
+        P.importProgressStatus.textContent = 'Analyzing inspectors and parts...';
+        P.importProgressDetail.textContent = `Found ${dataRows.length} rows.`;
+
+        const inspectors = await InspectorRepository.getAll();
+        const inspectorMap = new Map(inspectors.map(i => [i.fullName.trim().toLowerCase(), i.id]));
+
+        const uniqueInspectors = new Set();
+        dataRows.forEach(row => {
+          const insName = row[tekshirdiIndex] ? row[tekshirdiIndex].trim() : 'Unknown';
+          if (insName) uniqueInspectors.add(insName);
+        });
+
+        for (const insName of uniqueInspectors) {
+          const key = insName.toLowerCase();
+          if (!inspectorMap.has(key)) {
+            P.importProgressDetail.textContent = `Creating inspector: ${insName}...`;
+            const newIns = await InspectorRepository.add(insName);
+            inspectorMap.set(key, newIns.id);
+          }
+        }
+
+        const allParts = await PartRepository.getAll();
+        const partNameMap = new Map();
+        allParts.forEach(p => {
+          if (p.detailId && p.detailName) {
+            partNameMap.set(p.detailId.trim().toUpperCase(), p.detailName.trim());
+          }
+        });
+
+        const activeParts = await PartRepository.getBySupplier(P.activeSupplierId);
+        const activePartIds = new Set(activeParts.map(p => p.detailId.trim().toUpperCase()));
+
+        const uniqueDetailIds = new Set();
+        dataRows.forEach(row => {
+          const detId = row[detailIdIndex] ? row[detailIdIndex].trim().toUpperCase() : '';
+          if (detId) uniqueDetailIds.add(detId);
+        });
+
+        const newPartsToAdd = [];
+        uniqueDetailIds.forEach(detId => {
+          if (!activePartIds.has(detId)) {
+            newPartsToAdd.push(detId);
+          }
+        });
+
+        if (newPartsToAdd.length > 0) {
+          P.importProgressDetail.textContent = `Registering ${newPartsToAdd.length} new parts for ${activeSupplierName}...`;
+          
+          let partBatch = db.batch();
+          let count = 0;
+          for (let i = 0; i < newPartsToAdd.length; i++) {
+            const detId = newPartsToAdd[i];
+            const detailName = partNameMap.get(detId) || `Part ${detId}`;
+            const docRef = db.collection('parts').doc();
+            partBatch.set(docRef, {
+              supplierId: P.activeSupplierId,
+              supplierName: activeSupplierName,
+              detailId: detId,
+              detailName: detailName,
+              createdAt: new Date().toISOString()
+            });
+            count++;
+            if (count === 500) {
+              await partBatch.commit();
+              partBatch = db.batch();
+              count = 0;
+            }
+          }
+          if (count > 0) {
+            await partBatch.commit();
+          }
+          
+          Cache.invalidate('parts:all');
+          Cache.invalidate(`parts:bySupplier:${P.activeSupplierId}`);
+        }
+
+        const totalRecords = dataRows.length;
+        let recordsProcessed = 0;
+        let writeBatch = db.batch();
+        let batchCount = 0;
+
+        for (let i = 0; i < totalRecords; i++) {
+          const row = dataRows[i];
+
+          const rawDate = row[sanaIndex].trim();
+          let dateFormatted = '';
+          const dateParts = rawDate.split('.');
+          if (dateParts.length === 3) {
+            dateFormatted = `${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`;
+          } else {
+            const parsedD = new Date(rawDate);
+            if (!isNaN(parsedD.getTime())) {
+              dateFormatted = parsedD.toISOString().split('T')[0];
+            } else {
+              dateFormatted = new Date().toISOString().split('T')[0];
+            }
+          }
+
+          const fn = row[fnIndex] ? row[fnIndex].trim() : '';
+          const detailId = row[detailIdIndex] ? row[detailIdIndex].trim().toUpperCase() : '';
+          const qty = parseInt(row[soniIndex]) || 0;
+          const checked = (tekshirildiIndex !== -1 && row[tekshirildiIndex]) ? parseInt(row[tekshirildiIndex]) || 0 : qty;
+          const returned = (qaytarildiIndex !== -1 && row[qaytarildiIndex]) ? parseInt(row[qaytarildiIndex]) || 0 : 0;
+          const comment = (izohIndex !== -1 && row[izohIndex]) ? row[izohIndex].trim() : 'OK';
+          const insName = (tekshirdiIndex !== -1 && row[tekshirdiIndex]) ? row[tekshirdiIndex].trim() : 'Unknown';
+          const inspectorId = inspectorMap.get(insName.toLowerCase()) || 'unknown';
+
+          let detailName = partNameMap.get(detailId);
+          if (!detailName) {
+            detailName = `Part ${detailId}`;
+            partNameMap.set(detailId, detailName);
+          }
+
+          const newRecordDocRef = db.collection('records').doc();
+          writeBatch.set(newRecordDocRef, {
+            date: dateFormatted,
+            fn: fn,
+            supplierId: P.activeSupplierId,
+            supplierName: activeSupplierName,
+            detailId: detailId,
+            detailName: detailName,
+            quantity: qty,
+            checkedQuantity: checked,
+            returnedQuantity: returned,
+            inspectorId: inspectorId,
+            inspectorName: insName,
+            comment: comment || 'OK',
+            createdAt: new Date().toISOString()
+          });
+
+          batchCount++;
+          recordsProcessed++;
+
+          if (batchCount === 500) {
+            P.importProgressStatus.textContent = `Importing history records...`;
+            const percent = Math.round((recordsProcessed / totalRecords) * 100);
+            P.importProgressBar.style.width = `${percent}%`;
+            P.importProgressBar.setAttribute('aria-valuenow', percent);
+            P.importProgressDetail.textContent = `${recordsProcessed} / ${totalRecords} records written...`;
+
+            await writeBatch.commit();
+            writeBatch = db.batch();
+            batchCount = 0;
+          }
+        }
+
+        if (batchCount > 0) {
+          P.importProgressStatus.textContent = `Importing final history records...`;
+          P.importProgressBar.style.width = '100%';
+          P.importProgressBar.setAttribute('aria-valuenow', 100);
+          P.importProgressDetail.textContent = `${recordsProcessed} / ${totalRecords} records written...`;
+          await writeBatch.commit();
+        }
+
+        Cache.invalidate(`records:bySupplier:${P.activeSupplierId}`);
+        Cache.invalidate('records:latest30');
+        Cache.invalidate('records:distinctYears');
+
+        UI.showToast(`Successfully imported ${recordsProcessed} delivery records!`);
+        P.importProgressModal.hide();
+
+        await SupplierList.load();
+        await load();
+      } catch (err) {
+        console.error(err);
+        P.importProgressModal.hide();
+        UI.showToast(`Import failed: ${err.message}`, 'error');
+      }
+    };
+    reader.onerror = function () {
+      P.importProgressModal.hide();
+      UI.showToast('Failed to read CSV file.', 'error');
+    };
+    reader.readAsText(file);
+  }
+
   function bindEvents() {
     P.historySearchInput.addEventListener('input', Utils.debounce(() => {
       P.historyState.currentPage = 1;
@@ -182,6 +475,20 @@ window.SupplierHistory = (function () {
     }, 250));
 
     Utils.bindSortableHeaders('#history-table', P.historyState, load);
+
+    if (P.btnImportCsv && P.csvFileInput) {
+      P.btnImportCsv.addEventListener('click', () => {
+        P.csvFileInput.click();
+      });
+
+      P.csvFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          handleCsvImport(file);
+        }
+        P.csvFileInput.value = '';
+      });
+    }
 
     P.editRecordForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -195,7 +502,6 @@ window.SupplierHistory = (function () {
       const checked = Number(P.editRecChecked.value);
       const returned = Number(P.editRecReturned.value);
 
-      // Shared validator - identical business rule to the Register page form.
       const { checkedValid, returnedValid } = Utils.validateQuantities(qty, checked, returned);
 
       P.editRecChecked.classList.toggle('is-invalid', !checkedValid);

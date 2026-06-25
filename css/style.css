@@ -298,25 +298,21 @@ body {
 }
 
 /* Responsive Scroll heights for different viewport heights */
-.scroll-height-suppliers {
-  max-height: 600px;
-}
 .scroll-height-log-table {
-  max-height: 580px;
+  max-height: 750px;
 }
-.scroll-height-detail-table {
-  max-height: 400px;
+.scroll-height-detail-table,
+.scroll-height-suppliers {
+  max-height: 950px;
 }
 
 @media (max-height: 1024px) {
-  .scroll-height-suppliers {
-    max-height: 440px !important;
-  }
   .scroll-height-log-table {
-    max-height: 380px !important;
+    max-height: 580px !important;
   }
-  .scroll-height-detail-table {
-    max-height: 300px !important;
+  .scroll-height-detail-table,
+  .scroll-height-suppliers {
+    max-height: 700px !important;
   }
   
   /* Make card paddings and table paddings more compact */
@@ -345,24 +341,20 @@ body {
 /* Custom form grid widths for New Receiving Entry */
 @media (min-width: 768px) {
   .form-col-date {
-    flex: 0 0 12% !important;
-    width: 12% !important;
+    flex: 0 0 15% !important;
+    width: 15% !important;
   }
   .form-col-fn {
-    flex: 0 0 12% !important;
-    width: 12% !important;
+    flex: 0 0 15% !important;
+    width: 15% !important;
   }
   .form-col-supplier {
-    flex: 0 0 20% !important;
-    width: 20% !important;
+    flex: 0 0 30% !important;
+    width: 30% !important;
   }
   .form-col-detail-id {
-    flex: 0 0 23% !important;
-    width: 23% !important;
-  }
-  .form-col-detail-name {
-    flex: 0 0 33% !important;
-    width: 33% !important;
+    flex: 0 0 40% !important;
+    width: 40% !important;
   }
   
   .form-col-qty {
@@ -386,6 +378,84 @@ body {
   padding-top: 0.625rem !important;
   padding-bottom: 0.625rem !important;
 }
+
+/* Premium styled badges for Parts and Recs count */
+.badge-parts {
+  background-color: #0284c7 !important;
+  color: #ffffff !important;
+  border: 1px solid #0284c7 !important;
+}
+
+.badge-recs {
+  background-color: #4f46e5 !important;
+  color: #ffffff !important;
+  border: 1px solid #4f46e5 !important;
+}
+
+/* Dark mode overrides for Parts and Recs badges */
+[data-bs-theme="dark"] .badge-parts {
+  background-color: #0ea5e9 !important;
+  color: #ffffff !important;
+  border-color: #0ea5e9 !important;
+}
+
+[data-bs-theme="dark"] .badge-recs {
+  background-color: #6366f1 !important;
+  color: #ffffff !important;
+  border-color: #6366f1 !important;
+}
+
+/* Premium Search Bar UI */
+.premium-search-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-color);
+  background-color: rgba(0, 0, 0, 0.02);
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+
+.premium-search-group:focus-within {
+  border-color: var(--accent-color) !important;
+  background-color: var(--bg-card);
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+}
+
+[data-bs-theme="dark"] .premium-search-group {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+[data-bs-theme="dark"] .premium-search-group:focus-within {
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+}
+
+.premium-search-icon {
+  padding-left: 0.75rem;
+  padding-right: 0.25rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.premium-search-input {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0.35rem 0.75rem 0.35rem 0.25rem;
+  font-size: 0.85rem;
+  color: var(--text-main);
+  width: 100%;
+  outline: none !important;
+}
+
+.premium-search-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.75;
+}
+
 
 
 
