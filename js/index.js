@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const commentPresetsList = document.getElementById('predefined-comments-list');
   const submitBtn = document.getElementById('submit-btn');
   const formSpinner = document.getElementById('form-spinner');
+  const clearFormBtn = document.getElementById('clear-form-btn');
 
   // Table & Filter Elements
   const tableSearchInput = document.getElementById('table-search');
@@ -200,6 +201,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Helper to toggle Clear Form button visibility
+  function updateClearBtnVisibility() {
+    if (qtyInput.value.trim() !== '') {
+      clearFormBtn.classList.remove('d-none');
+    } else {
+      clearFormBtn.classList.add('d-none');
+    }
+  }
+
+  // Clear Form button action
+  clearFormBtn.addEventListener('click', () => {
+    fnInput.value = '';
+    supplierSelect.value = '';
+    
+    detailSearch.value = '';
+    detailSearch.disabled = true;
+    detailSearch.placeholder = 'Select supplier first...';
+    detailIdHidden.value = '';
+    detailNameInput.value = '';
+    
+    qtyInput.value = '';
+    commentInput.value = '';
+    lastQty = '';
+    
+    // Clear validation classes
+    form.querySelectorAll('.is-invalid').forEach(elem => elem.classList.remove('is-invalid'));
+    form.querySelectorAll('.is-valid').forEach(elem => elem.classList.remove('is-valid'));
+    form.classList.remove('was-validated');
+    
+    // Hide the clear button
+    clearFormBtn.classList.add('d-none');
+    
+    fnInput.focus();
+  });
+
   // --- QUANTITIES AUTO-VALIDATION HELPER ---
   qtyInput.addEventListener('input', () => {
     const qtyStr = qtyInput.value;
@@ -220,6 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     lastQty = qtyStr;
+    updateClearBtnVisibility();
   });
 
   checkedQtyInput.addEventListener('input', () => {
@@ -313,8 +350,10 @@ document.addEventListener('DOMContentLoaded', () => {
       await AppStorage.addReceivingRecord(record);
       UI.showToast('Receiving record registered successfully!');
       
-      // Reset Form elements (preserving date & loading values)
-      resetFormExceptDate();
+      // Keep last entered inputs in the form, just clear the validation formatting styles
+      form.classList.remove('was-validated');
+      form.querySelectorAll('.is-valid').forEach(el => el.classList.remove('is-valid'));
+      form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
       
       // Refresh log table
       await loadTableRecords();
