@@ -58,8 +58,17 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       // Populate Suppliers
       const suppliers = await AppStorage.getSuppliers();
+      const parts = await AppStorage.getParts();
+      
       supplierSelect.innerHTML = '<option value="" selected disabled>Choose Supplier...</option>';
-      suppliers.sort((a, b) => a.name.localeCompare(b.name)).forEach(sup => {
+      suppliers.sort((a, b) => {
+        const countA = parts.filter(p => p.supplierId === a.id).length;
+        const countB = parts.filter(p => p.supplierId === b.id).length;
+        if (countB !== countA) {
+          return countB - countA;
+        }
+        return a.name.localeCompare(b.name);
+      }).forEach(sup => {
         const opt = document.createElement('option');
         opt.value = sup.id;
         opt.textContent = sup.name;
