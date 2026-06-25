@@ -94,13 +94,9 @@ document.addEventListener('DOMContentLoaded', () => {
     await loadSuppliersList();
     await initYearSelector();
     
-    // Auto-select first supplier if available
-    const suppliers = await AppStorage.getSuppliers();
-    if (suppliers.length > 0) {
-      await selectSupplier(suppliers[0].id);
-    } else {
-      updateDetailCardState();
-    }
+    // Default to empty state on initialization
+    activeSupplierId = null;
+    updateDetailCardState();
   }
 
   // --- SUPPLIER DIRECTORY LOGIC ---
@@ -137,6 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const item = document.createElement('a');
         item.href = '#';
+        item.dataset.id = sup.id; // Store ID for fast local DOM class changes
         item.className = `list-group-item list-group-item-action border-bottom py-3 px-3 ${sup.id === activeSupplierId ? 'active' : ''}`;
         item.innerHTML = `
           <div class="d-flex w-100 justify-content-between align-items-center mb-1">
@@ -191,8 +188,8 @@ document.addEventListener('DOMContentLoaded', () => {
         await renderActiveTab();
       }
       
-      // Rerender supplier list to update active class highlight
-      await loadSuppliersList();
+      // Update local highlight in sidebar list without querying Firestore
+      updateActiveSupplierHighlight();
     } catch (err) {
       console.error(err);
     } finally {
@@ -211,7 +208,28 @@ document.addEventListener('DOMContentLoaded', () => {
       partsTableBody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">Select a supplier from directory</td></tr>';
       historyPagerBar.classList.add('d-none');
       partsPagerBar.classList.add('d-none');
+
+      // Clear charts if any
+      if (incomingChart) {
+        incomingChart.destroy();
+        incomingChart = null;
+      }
+      if (returnedChart) {
+        returnedChart.destroy();
+        returnedChart = null;
+      }
     }
+  }
+
+  function updateActiveSupplierHighlight() {
+    const items = suppliersListContainer.querySelectorAll('.list-group-item');
+    items.forEach(item => {
+      if (item.dataset.id === activeSupplierId) {
+        item.classList.add('active');
+      } else {
+        item.classList.remove('active');
+      }
+    });
   }
 
   // --- SUPPLIER CRUD MODALS ---
@@ -255,11 +273,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // Edit
         await AppStorage.updateSupplier(id, name);
         UI.showToast('Supplier renamed successfully.');
+        await loadSuppliersList();
         await selectSupplier(id);
       } else {
         // Create
         const newSup = await AppStorage.addSupplier(name);
         UI.showToast('Supplier registered.');
+        await loadSuppliersList();
         await selectSupplier(newSup.id);
       }
       supplierModal.hide();
@@ -286,16 +306,11 @@ document.addEventListener('DOMContentLoaded', () => {
             await AppStorage.deleteSupplier(activeSupplierId);
             UI.showToast('Supplier deleted.');
             
-            // Reset active selection
-            const suppliers = await AppStorage.getSuppliers();
-            activeSupplierId = suppliers.length > 0 ? suppliers[0].id : null;
+            // Reset active selection to empty
+            activeSupplierId = null;
             
             await loadSuppliersList();
-            if (activeSupplierId) {
-              await selectSupplier(activeSupplierId);
-            } else {
-              updateDetailCardState();
-            }
+            updateDetailCardState();
           } catch (err) {
             console.error(err);
             UI.showToast('Failed to delete supplier.', 'error');
