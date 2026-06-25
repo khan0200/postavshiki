@@ -173,6 +173,7 @@
                       <th scope="col" class="sortable-header text-end" data-sort="checkedQuantity">Checked</th>
                       <th scope="col" class="sortable-header text-end" data-sort="returnedQuantity">Returned</th>
                       <th scope="col" class="sortable-header" data-sort="inspectorName">Inspector</th>
+                      <th scope="col" class="text-center">Action</th>
                     </tr>
                   </thead>
                   <tbody id="history-table-body">
@@ -393,7 +394,86 @@
     </div>
   </div>
 
+  <!-- Edit Delivery/Receiving Record Modal -->
+  <div class="modal fade" id="editRecordModal" tabindex="-1" aria-labelledby="editRecordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 shadow-lg">
+        <form id="edit-record-form" novalidate>
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold text-primary" id="editRecordModalLabel">
+              <i class="bi bi-pencil-square me-2"></i>Edit Delivery Record
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="edit-rec-id">
+            
+            <!-- Row 1: Date, F/N, Inspector -->
+            <div class="row g-3 mb-3">
+              <div class="col-md-4">
+                <label for="edit-rec-date" class="form-label small fw-semibold">Date</label>
+                <input type="date" class="form-control" id="edit-rec-date" required>
+                <div class="invalid-feedback">Required.</div>
+              </div>
+              <div class="col-md-4">
+                <label for="edit-rec-fn" class="form-label small fw-semibold">F/N (PO Number)</label>
+                <input type="text" class="form-control" id="edit-rec-fn" required>
+                <div class="invalid-feedback">Required.</div>
+              </div>
+              <div class="col-md-4">
+                <label for="edit-rec-inspector" class="form-label small fw-semibold">Inspector</label>
+                <select class="form-select" id="edit-rec-inspector" required>
+                  <!-- Populated dynamically via JS -->
+                </select>
+                <div class="invalid-feedback">Required.</div>
+              </div>
+            </div>
 
+            <!-- Row 2: Part selection -->
+            <div class="row g-3 mb-3">
+              <div class="col-md-12">
+                <label for="edit-rec-part" class="form-label small fw-semibold">Part Number (Detail ID)</label>
+                <select class="form-select" id="edit-rec-part" required>
+                  <!-- Populated dynamically via JS -->
+                </select>
+                <div class="invalid-feedback">Required.</div>
+              </div>
+            </div>
+
+            <!-- Row 3: Quantities -->
+            <div class="row g-3 mb-3">
+              <div class="col-md-4">
+                <label for="edit-rec-qty" class="form-label small fw-semibold">Qty Received</label>
+                <input type="number" class="form-control" id="edit-rec-qty" min="1" required>
+                <div class="invalid-feedback">Must be > 0.</div>
+              </div>
+              <div class="col-md-4">
+                <label for="edit-rec-checked" class="form-label small fw-semibold">Qty Checked</label>
+                <input type="number" class="form-control" id="edit-rec-checked" min="0" required>
+                <div class="invalid-feedback">Cannot exceed Qty Received.</div>
+              </div>
+              <div class="col-md-4">
+                <label for="edit-rec-returned" class="form-label small fw-semibold">Qty Returned</label>
+                <input type="number" class="form-control" id="edit-rec-returned" min="0" required>
+                <div class="invalid-feedback">Cannot exceed Qty Checked.</div>
+              </div>
+            </div>
+
+            <!-- Row 4: Comment -->
+            <div class="mb-3">
+              <label for="edit-rec-comment" class="form-label small fw-semibold">Comments</label>
+              <input type="text" class="form-control" id="edit-rec-comment">
+            </div>
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 
   <!-- Bootstrap 5 Bundle JS (includes Popper) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>

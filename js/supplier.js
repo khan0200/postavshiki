@@ -64,6 +64,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const transferPartDisplay = document.getElementById('transfer-part-display');
   const transferDestinationSelect = document.getElementById('transfer-destination-select');
 
+  // DOM Elements - Edit receiving record modal
+  const editRecordModalElem = document.getElementById('editRecordModal');
+  const editRecordModal = new bootstrap.Modal(editRecordModalElem);
+  const editRecordForm = document.getElementById('edit-record-form');
+  const editRecId = document.getElementById('edit-rec-id');
+  const editRecDate = document.getElementById('edit-rec-date');
+  const editRecFn = document.getElementById('edit-rec-fn');
+  const editRecInspector = document.getElementById('edit-rec-inspector');
+  const editRecPart = document.getElementById('edit-rec-part');
+  const editRecQty = document.getElementById('edit-rec-qty');
+  const editRecChecked = document.getElementById('edit-rec-checked');
+  const editRecReturned = document.getElementById('edit-rec-returned');
+  const editRecComment = document.getElementById('edit-rec-comment');
+
   // State Management
   let activeSupplierId = null;
   let activeTab = 'history'; // history | parts | charts
@@ -325,6 +339,123 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  async function openEditRecordModal(rec) {
+    if (supplierDetailSpinner) supplierDetailSpinner.classList.add('active');
+    try {
+      // 1. Populate Inspectors select
+      const inspectors = await AppStorage.getInspectors();
+      editRecInspector.innerHTML = '';
+      inspectors.sort((a, b) => a.fullName.localeCompare(b.fullName)).forEach(ins => {
+        const opt = document.createElement('option');
+        opt.value = ins.id;
+        opt.textContent = ins.fullName;
+        if (ins.id === rec.inspectorId) {
+          opt.selected = true;
+        }
+        editRecInspector.appendChild(opt);
+      });
+
+      // 2. Populate Parts select (from active supplier parts)
+      const parts = await AppStorage.getPartsBySupplier(activeSupplierId);
+      editRecPart.innerHTML = '';
+      parts.sort((a, b) => a.detailId.localeCompare(b.detailId)).forEach(part => {
+        const opt = document.createElement('option');
+        opt.value = part.detailId;
+        opt.textContent = `${part.detailId} - ${part.detailName}`;
+        opt.dataset.name = part.detailName;
+        if (part.detailId === rec.detailId) {
+          opt.selected = true;
+        }
+        editRecPart.appendChild(opt);
+      });
+
+      // 3. Populate form fields
+      editRecId.value = rec.id;
+      editRecDate.value = rec.date;
+      editRecFn.value = rec.fn;
+      editRecQty.value = rec.quantity;
+      editRecChecked.value = rec.checkedQuantity;
+      editRecReturned.value = rec.returnedQuantity;
+      editRecComment.value = rec.comment || '';
+
+      // 4. Remove validation indicators
+      editRecordForm.classList.remove('was-validated');
+      editRecChecked.classList.remove('is-invalid');
+      editRecReturned.classList.remove('is-invalid');
+
+      // 5. Open Modal
+      editRecordModal.show();
+    } catch (err) {
+      console.error(err);
+      UI.showToast('Failed to load record details.', 'error');
+    } finally {
+      if (supplierDetailSpinner) supplierDetailSpinner.classList.remove('active');
+    }
+  }
+
+  editRecordForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!editRecordForm.checkValidity()) {
+      e.stopPropagation();
+      editRecordForm.classList.add('was-validated');
+      return;
+    }
+
+    const qty = Number(editRecQty.value);
+    const checked = Number(editRecChecked.value);
+    const returned = Number(editRecReturned.value);
+
+    // Validation checks
+    let isValid = true;
+    
+    // Checked <= Qty
+    if (checked > qty) {
+      editRecChecked.classList.add('is-invalid');
+      isValid = false;
+    } else {
+      editRecChecked.classList.remove('is-invalid');
+    }
+
+    // Returned <= Checked
+    if (returned > checked) {
+      editRecReturned.classList.add('is-invalid');
+      isValid = false;
+    } else {
+      editRecReturned.classList.remove('is-invalid');
+    }
+
+    if (!isValid) return;
+
+    const id = editRecId.value;
+    const selectedPartOpt = editRecPart.options[editRecPart.selectedIndex];
+    const detailName = selectedPartOpt.dataset.name;
+
+    const updatedData = {
+      date: editRecDate.value,
+      fn: editRecFn.value,
+      supplierId: activeSupplierId,
+      inspectorId: editRecInspector.value,
+      detailId: editRecPart.value,
+      detailName: detailName,
+      quantity: qty,
+      checkedQuantity: checked,
+      returnedQuantity: returned,
+      comment: editRecComment.value || 'OK'
+    };
+
+    if (supplierDetailSpinner) supplierDetailSpinner.classList.add('active');
+    try {
+      await AppStorage.updateReceivingRecord(id, updatedData);
+      UI.showToast('Delivery record updated successfully.');
+      editRecordModal.hide();
+      await loadHistoryTable();
+    } catch (err) {
+      console.error(err);
+      UI.showToast('Failed to update record.', 'error');
+    } finally {
+      if (supplierDetailSpinner) supplierDetailSpinner.classList.remove('active');
+    }
+  });
 
   // --- TABS SWITCHING ENGINE ---
   document.querySelectorAll('#supplierTabs button').forEach(tabBtn => {
@@ -442,7 +573,41 @@ document.addEventListener('DOMContentLoaded', () => {
           <td class="text-end text-success">${rec.checkedQuantity}</td>
           <td class="text-end text-danger">${rec.returnedQuantity}</td>
           <td class="small">${rec.inspectorName}</td>
+          <td class="text-center text-nowrap">
+            <button class="btn btn-outline-primary btn-sm border-0 py-0 px-1 me-1 edit-rec-btn" data-id="${rec.id}">
+              <i class="bi bi-pencil-fill"></i>
+            </button>
+            <button class="btn btn-outline-danger btn-sm border-0 py-0 px-1 delete-rec-btn" data-id="${rec.id}">
+              <i class="bi bi-trash-fill"></i>
+            </button>
+          </td>
         `;
+
+        tr.querySelector('.delete-rec-btn').addEventListener('click', () => {
+          UI.confirm(
+            'Delete Record?',
+            `Are you sure you want to delete PO record ${rec.fn}? This cannot be undone.`,
+            async () => {
+              if (supplierDetailSpinner) supplierDetailSpinner.classList.add('active');
+              try {
+                await AppStorage.deleteReceivingRecord(rec.id);
+                UI.showToast('Record deleted.');
+                await loadSuppliersList();
+                await loadHistoryTable();
+              } catch (err) {
+                console.error(err);
+                UI.showToast('Failed to delete record.', 'error');
+              } finally {
+                if (supplierDetailSpinner) supplierDetailSpinner.classList.remove('active');
+              }
+            }
+          );
+        });
+
+        tr.querySelector('.edit-rec-btn').addEventListener('click', async () => {
+          await openEditRecordModal(rec);
+        });
+
         historyTableBody.appendChild(tr);
       });
 

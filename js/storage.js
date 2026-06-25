@@ -351,5 +351,32 @@ window.AppStorage = {
   async deleteReceivingRecord(id) {
     await db.collection('records').doc(id).delete();
     return true;
+  },
+
+  async updateReceivingRecord(id, record) {
+    const supplier = await this.getSupplierById(record.supplierId);
+    const supplierName = supplier ? supplier.name : 'Unknown Supplier';
+
+    const inspector = await this.getInspectorById(record.inspectorId);
+    const inspectorName = inspector ? inspector.fullName : 'Unknown Inspector';
+
+    const updatedRecord = {
+      date: record.date,
+      fn: record.fn.trim(),
+      supplierId: record.supplierId,
+      supplierName: supplierName,
+      detailId: record.detailId,
+      detailName: record.detailName,
+      quantity: Number(record.quantity),
+      checkedQuantity: Number(record.checkedQuantity),
+      returnedQuantity: Number(record.returnedQuantity),
+      inspectorId: record.inspectorId,
+      inspectorName: inspectorName,
+      comment: record.comment.trim(),
+      updatedAt: new Date().toISOString()
+    };
+
+    await db.collection('records').doc(id).update(updatedRecord);
+    return { id, ...updatedRecord };
   }
 };
