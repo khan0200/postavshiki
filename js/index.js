@@ -37,7 +37,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // State Management for Registration Screen
   let activeParts = []; // parts of the selected supplier
   let records = [];
-  let lastQty = ''; // track previous quantity received for smart auto-syncing
   let tableState = {
     searchQuery: '',
     sortColumn: 'date',
@@ -222,7 +221,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     qtyInput.value = '';
     commentInput.value = '';
-    lastQty = '';
     
     // Clear validation classes
     form.querySelectorAll('.is-invalid').forEach(elem => elem.classList.remove('is-invalid'));
@@ -238,23 +236,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- QUANTITIES AUTO-VALIDATION HELPER ---
   qtyInput.addEventListener('input', () => {
     const qtyStr = qtyInput.value;
-    const qty = Number(qtyStr);
     
-    // If checked quantity is empty OR matches default '5' OR matches the previous qty value, auto-sync it
-    if (checkedQtyInput.value === '' || checkedQtyInput.value === '5' || checkedQtyInput.value === lastQty) {
-      checkedQtyInput.value = qtyStr;
-    } else {
-      // Auto-cap values to prevent immediate user validation issues
-      if (Number(checkedQtyInput.value) > qty) {
+    if (qtyStr !== '') {
+      const qty = Number(qtyStr);
+      // Auto-cap checked quantity only if it exceeds the new received quantity
+      if (checkedQtyInput.value !== '' && Number(checkedQtyInput.value) > qty) {
         checkedQtyInput.value = qty;
       }
     }
 
-    if (Number(returnedQtyInput.value) > Number(checkedQtyInput.value)) {
+    if (checkedQtyInput.value !== '' && Number(returnedQtyInput.value) > Number(checkedQtyInput.value)) {
       returnedQtyInput.value = checkedQtyInput.value;
     }
 
-    lastQty = qtyStr;
     updateClearBtnVisibility();
   });
 
@@ -379,7 +373,6 @@ document.addEventListener('DOMContentLoaded', () => {
     qtyInput.value = '';
     checkedQtyInput.value = '5';
     returnedQtyInput.value = '0';
-    lastQty = '';
     inspectorSelect.value = '';
     commentInput.value = '';
     
