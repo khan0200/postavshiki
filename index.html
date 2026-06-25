@@ -80,14 +80,14 @@
           <div class="card-body">
             <form id="receiving-form" novalidate>
               
-              <!-- Row 1: Date, F/N, Supplier, Inspector -->
+              <!-- Row 1: Date, F/N, Supplier, Detail ID, Detail Name -->
               <div class="row g-3 mb-3">
-                <div class="col-md-3 col-sm-6">
+                <div class="col-md-2 col-sm-6">
                   <label for="rec-date" class="form-label small fw-semibold">Date</label>
                   <input type="date" class="form-control" id="rec-date" required>
                   <div class="invalid-feedback">Required.</div>
                 </div>
-                <div class="col-md-3 col-sm-6">
+                <div class="col-md-2 col-sm-6">
                   <label for="rec-fn" class="form-label small fw-semibold">F/N (PO Number)</label>
                   <input type="text" class="form-control" id="rec-fn" placeholder="e.g. PO-5531" required>
                   <div class="invalid-feedback">F/N is required.</div>
@@ -99,18 +99,7 @@
                   </select>
                   <div class="invalid-feedback">Please select a supplier.</div>
                 </div>
-                <div class="col-md-3 col-sm-6">
-                  <label for="rec-inspector" class="form-label small fw-semibold">Inspector</label>
-                  <select class="form-select" id="rec-inspector" required>
-                    <option value="" selected disabled>Select Inspector...</option>
-                  </select>
-                  <div class="invalid-feedback">Inspector is required.</div>
-                </div>
-              </div>
-
-              <!-- Row 2: Detail ID, Detail Name -->
-              <div class="row g-3 mb-3">
-                <div class="col-md-6">
+                <div class="col-md-2 col-sm-6">
                   <label for="rec-detail-search" class="form-label small fw-semibold">Detail ID (Part Number)</label>
                   <div class="custom-dropdown-container">
                     <input type="text" class="form-control" id="rec-detail-search" placeholder="Select supplier first..." autocomplete="off" disabled required>
@@ -121,13 +110,13 @@
                     </div>
                   </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-3 col-sm-12">
                   <label for="rec-detail-name" class="form-label small fw-semibold">Detail Name</label>
                   <input type="text" class="form-control bg-body-secondary text-muted" id="rec-detail-name" placeholder="Auto-populated" readonly>
                 </div>
               </div>
 
-              <!-- Row 3: Quantities & Comments -->
+              <!-- Row 2: Qty Received, Qty Checked, Qty Returned, Inspector, Comments -->
               <div class="row g-3 mb-4">
                 <div class="col-md-2 col-4">
                   <label for="rec-quantity" class="form-label small fw-semibold">Qty Received</label>
@@ -144,11 +133,18 @@
                   <input type="number" class="form-control" id="rec-returned-qty" min="0" value="0" required>
                   <div class="invalid-feedback">Cannot exceed Checked.</div>
                 </div>
-                <div class="col-md-6 col-12">
+                <div class="col-md-2 col-sm-6 col-12">
+                  <label for="rec-inspector" class="form-label small fw-semibold">Inspector</label>
+                  <select class="form-select" id="rec-inspector" required>
+                    <option value="" selected disabled>Select Inspector...</option>
+                  </select>
+                  <div class="invalid-feedback">Inspector is required.</div>
+                </div>
+                <div class="col-md-4 col-sm-6 col-12">
                   <label for="rec-comment" class="form-label small fw-semibold">Comments</label>
                   <div class="input-group">
-                    <input type="text" class="form-control" id="rec-comment" placeholder="QC notes, scratches, issues...">
-                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Presets</button>
+                    <input type="text" class="form-control" id="rec-comment" placeholder="QC notes, scratches, issues..." autocomplete="off">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="presets-dropdown-btn">Presets</button>
                     <ul class="dropdown-menu dropdown-menu-end" id="predefined-comments-list">
                       <!-- Populated dynamically via JS -->
                     </ul>

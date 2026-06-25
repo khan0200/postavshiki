@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     currentPage: 1,
     pageSize: 30
   };
+  let commentPresets = []; // cached comment presets
 
   // Set default date to today (local timezone) and set default quantities
   const today = new Date().toISOString().split('T')[0];
@@ -51,6 +52,50 @@ document.addEventListener('DOMContentLoaded', () => {
   qtyInput.value = '';
   checkedQtyInput.value = '5';
   returnedQtyInput.value = '0';
+
+  // Helper to render filtered presets dropdown list
+  function renderCommentPresets(filter = '') {
+    commentPresetsList.innerHTML = '';
+    const filtered = commentPresets.filter(cmt =>
+      cmt.text.toLowerCase().includes(filter.toLowerCase())
+    );
+
+    if (filtered.length === 0) {
+      const li = document.createElement('li');
+      li.innerHTML = '<span class="dropdown-item-text text-muted small">No matches</span>';
+      commentPresetsList.appendChild(li);
+      return;
+    }
+
+    filtered.forEach(cmt => {
+      const li = document.createElement('li');
+      li.innerHTML = `<a class="dropdown-item" href="#">${cmt.text}</a>`;
+      li.querySelector('a').addEventListener('click', (e) => {
+        e.preventDefault();
+        
+        const parts = commentInput.value.split(',').map(p => p.trim());
+        if (parts.length > 0) {
+          parts[parts.length - 1] = cmt.text;
+        } else {
+          parts.push(cmt.text);
+        }
+        commentInput.value = parts.filter(p => p !== '').join(', ') + ', ';
+        
+        // Re-render full list for next open
+        renderCommentPresets('');
+        
+        // Hide dropdown
+        const dropdownToggle = document.getElementById('presets-dropdown-btn');
+        if (dropdownToggle) {
+          const dropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
+          dropdown.hide();
+        }
+        
+        commentInput.focus();
+      });
+      commentPresetsList.appendChild(li);
+    });
+  }
 
   // Initialize form drop downs
   async function loadFormDropdowns() {
@@ -86,28 +131,46 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       // Populate Predefined Comments
-      const comments = await AppStorage.getComments();
-      commentPresetsList.innerHTML = '';
-      comments.forEach(cmt => {
-        const li = document.createElement('li');
-        li.innerHTML = `<a class="dropdown-item" href="#">${cmt.text}</a>`;
-        li.querySelector('a').addEventListener('click', (e) => {
-          e.preventDefault();
-          const currentVal = commentInput.value.trim();
-          if (currentVal === '') {
-            commentInput.value = cmt.text;
-          } else {
-            commentInput.value = currentVal + ', ' + cmt.text;
-          }
-          commentInput.focus();
-        });
-        commentPresetsList.appendChild(li);
-      });
+      commentPresets = await AppStorage.getComments();
+      renderCommentPresets('');
     } catch (err) {
       console.error('Error loading dropdowns:', err);
     } finally {
       if (formSpinner) formSpinner.classList.remove('active');
     }
+  }
+
+  // --- COMMENT PRESET SEARCH LOGIC ---
+  commentInput.addEventListener('input', () => {
+    const parts = commentInput.value.split(',');
+    const query = parts.length > 0 ? parts[parts.length - 1].trim() : '';
+
+    renderCommentPresets(query);
+
+    const dropdownToggle = document.getElementById('presets-dropdown-btn');
+    if (dropdownToggle) {
+      const dropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
+      
+      // Only show if there's text being typed and matches found
+      const filtered = commentPresets.filter(cmt =>
+        cmt.text.toLowerCase().includes(query.toLowerCase())
+      );
+      
+      if (query.length > 0 && filtered.length > 0) {
+        dropdown.show();
+      } else {
+        dropdown.hide();
+      }
+    }
+  });
+
+  const dropdownToggle = document.getElementById('presets-dropdown-btn');
+  if (dropdownToggle) {
+    dropdownToggle.addEventListener('show.bs.dropdown', () => {
+      const parts = commentInput.value.split(',');
+      const query = parts.length > 0 ? parts[parts.length - 1].trim() : '';
+      renderCommentPresets(query);
+    });
   }
 
   // --- SEARCHABLE DETAIL ID DROPDOWN LOGIC ---
