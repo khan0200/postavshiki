@@ -32,7 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const tableBody = document.getElementById('records-table-body');
   const emptyState = document.getElementById('table-empty-state');
   const tableInfoSummary = document.getElementById('table-info-summary');
-  const paginationList = document.getElementById('table-pagination');
   const tableSpinner = document.getElementById('table-spinner');
 
   // State Management for Registration Screen
@@ -409,6 +408,10 @@ document.addEventListener('DOMContentLoaded', () => {
         };
       });
 
+      // Sort by date desc to get newest first, then limit to top 30
+      records.sort((a, b) => new Date(b.date) - new Date(a.date));
+      records = records.slice(0, 30);
+
       renderTable();
     } catch (err) {
       console.error('Error loading table records:', err);
@@ -446,32 +449,20 @@ document.addEventListener('DOMContentLoaded', () => {
       return 0;
     });
 
-    // 3. Paginate
-    const totalEntries = filtered.length;
-    const totalPages = Math.ceil(totalEntries / tableState.pageSize);
-    
-    if (tableState.currentPage > totalPages && totalPages > 0) {
-      tableState.currentPage = totalPages;
-    }
-
-    const startIndex = (tableState.currentPage - 1) * tableState.pageSize;
-    const endIndex = Math.min(startIndex + tableState.pageSize, totalEntries);
-    const paginated = filtered.slice(startIndex, endIndex);
-
     // Render Rows
+    const totalEntries = filtered.length;
     tableBody.innerHTML = '';
     
     if (totalEntries === 0) {
       emptyState.classList.remove('d-none');
-      tableInfoSummary.textContent = 'Showing 0 to 0 of 0 entries';
-      paginationList.innerHTML = '';
+      tableInfoSummary.textContent = `Showing 0 of ${records.length} entries (latest 30)`;
       return;
     }
     
     emptyState.classList.add('d-none');
-    tableInfoSummary.textContent = `Showing ${startIndex + 1} to ${endIndex} of ${totalEntries} entries`;
+    tableInfoSummary.textContent = `Showing ${totalEntries} of ${records.length} entries (latest 30)`;
 
-    paginated.forEach(rec => {
+    filtered.forEach(rec => {
       const tr = document.createElement('tr');
       
       // Determine color badge style based on returns
@@ -506,79 +497,10 @@ document.addEventListener('DOMContentLoaded', () => {
         <td class="text-end text-danger">${rec.returnedQuantity}</td>
         <td class="small">${rec.inspectorName}</td>
         <td class="text-truncate small" style="max-width: 120px;" title="${rec.comment}">${rec.comment}</td>
-        <td class="text-center">
-          <button class="btn btn-outline-danger btn-sm border-0 py-0 px-1 delete-rec-btn" data-id="${rec.id}">
-            <i class="bi bi-trash-fill"></i>
-          </button>
-        </td>
       `;
-
-      tr.querySelector('.delete-rec-btn').addEventListener('click', () => {
-        UI.confirm(
-          'Delete Record?',
-          `Are you sure you want to delete PO record ${rec.fn} for supplier ${rec.supplierName}? This cannot be undone.`,
-          async () => {
-            try {
-              await AppStorage.deleteReceivingRecord(rec.id);
-              UI.showToast('Record deleted.');
-              await loadTableRecords();
-            } catch (err) {
-              console.error(err);
-              UI.showToast('Failed to delete record.', 'error');
-            }
-          }
-        );
-      });
 
       tableBody.appendChild(tr);
     });
-
-    renderPagination(totalPages);
-  }
-
-  function renderPagination(totalPages) {
-    paginationList.innerHTML = '';
-    if (totalPages <= 1) return;
-
-    // Previous Button
-    const prevLi = document.createElement('li');
-    prevLi.className = `page-item ${tableState.currentPage === 1 ? 'disabled' : ''}`;
-    prevLi.innerHTML = `<a class="page-link" href="#" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a>`;
-    prevLi.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (tableState.currentPage > 1) {
-        tableState.currentPage--;
-        renderTable();
-      }
-    });
-    paginationList.appendChild(prevLi);
-
-    // Number Buttons
-    for (let i = 1; i <= totalPages; i++) {
-      const li = document.createElement('li');
-      li.className = `page-item ${tableState.currentPage === i ? 'active' : ''}`;
-      li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
-      li.addEventListener('click', (e) => {
-        e.preventDefault();
-        tableState.currentPage = i;
-        renderTable();
-      });
-      paginationList.appendChild(li);
-    }
-
-    // Next Button
-    const nextLi = document.createElement('li');
-    nextLi.className = `page-item ${tableState.currentPage === totalPages ? 'disabled' : ''}`;
-    nextLi.innerHTML = `<a class="page-link" href="#" aria-label="Next"><span aria-hidden="true">&raquo;</span></a>`;
-    nextLi.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (tableState.currentPage < totalPages) {
-        tableState.currentPage++;
-        renderTable();
-      }
-    });
-    paginationList.appendChild(nextLi);
-  }
 
   // Sorting columns triggers
   document.querySelectorAll('.sortable-header').forEach(header => {
