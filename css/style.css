@@ -379,4 +379,13 @@ body {
   }
 }
 
+/* Increase form input heights by 10-15% */
+#receiving-form .form-control,
+#receiving-form .form-select,
+#receiving-form .input-group .btn {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+
 
