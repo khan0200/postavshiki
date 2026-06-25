@@ -88,6 +88,64 @@ window.UI = {
     bsModal.show();
   },
   
+  /**
+   * Creates a reusable "type to search, click to select" dropdown control.
+   * Replaces the two near-identical implementations that previously existed
+   * independently for the Comment Presets list and the Detail ID search box.
+   *
+   * options:
+   *   inputEl          - the visible text <input>
+   *   menuEl           - the dropdown menu container element
+   *   getItems()       - returns the current full array of selectable items
+   *   filterFn(item, query) -> boolean
+   *   renderItem(item) -> string (innerHTML for one menu entry)
+   *   onSelect(item)   - called when an item is clicked
+   *   emptyText        - text shown when no items match (default: 'No matches')
+   *
+   * Returns { render(query) } so callers can force a re-render (e.g. on focus).
+   */
+  createSearchableDropdown({ inputEl, menuEl, getItems, filterFn, renderItem, onSelect, emptyText = 'No matches' }) {
+    function render(query = '') {
+      const items = getItems();
+      const filtered = items.filter(item => filterFn(item, query));
+
+      menuEl.innerHTML = '';
+
+      if (filtered.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'px-3 py-2 text-muted small';
+        empty.textContent = emptyText;
+        menuEl.appendChild(empty);
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+      filtered.forEach(item => {
+        const el = document.createElement('div');
+        el.className = 'custom-dropdown-item';
+        el.innerHTML = renderItem(item);
+        el.addEventListener('click', () => onSelect(item));
+        fragment.appendChild(el);
+      });
+      menuEl.appendChild(fragment);
+    }
+
+    inputEl.addEventListener('focus', () => {
+      render(inputEl.value);
+      menuEl.classList.add('show');
+    });
+
+    // Hide this dropdown when the user clicks anywhere outside its container.
+    document.addEventListener('click', (e) => {
+      const container = inputEl.closest('.custom-dropdown-container') || inputEl.parentElement;
+      if (!e.target.closest('.custom-dropdown-container') || (container && !container.contains(e.target))) {
+        menuEl.classList.remove('show');
+      }
+    });
+
+    return { render };
+  },
+
   // Shared navigation initialization
   initNavbar(activePage) {
     const navbar = document.querySelector('.navbar');

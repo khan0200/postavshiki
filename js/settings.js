@@ -37,10 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // State Management
   let currentView = 'inspectors'; // inspectors | comments
 
-  // --- INITIALIZATION ---
+  // --- INITIALIZATION --- (independent collections loaded in parallel)
   async function init() {
-    await loadInspectorsTable();
-    await loadCommentsTable();
+    await Promise.all([loadInspectorsTable(), loadCommentsTable()]);
   }
 
   // --- VIEW TOGGLE LOGIC ---
@@ -67,24 +66,23 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadInspectorsTable() {
     if (inspectorsSpinner) inspectorsSpinner.classList.add('active');
     try {
-      const inspectors = await AppStorage.getInspectors();
-      inspectorsTableBody.innerHTML = '';
+      const inspectors = await InspectorRepository.getAll();
 
       if (inspectors.length === 0) {
         inspectorsTableBody.innerHTML = '<tr><td colspan="2" class="text-center py-4 text-muted">No inspectors registered.</td></tr>';
         return;
       }
 
-      inspectors.forEach(ins => {
+      Utils.renderRows(inspectorsTableBody, inspectors, (ins) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td class="fw-semibold">${ins.fullName}</td>
+          <td class="fw-semibold">${Utils.escapeHtml(ins.fullName)}</td>
           <td class="text-center">
             <div class="btn-group btn-group-sm">
-              <button class="btn btn-outline-secondary edit-ins-btn" data-id="${ins.id}" title="Rename">
+              <button class="btn btn-outline-secondary edit-ins-btn" data-id="${ins.id}" title="Rename" aria-label="Rename inspector">
                 <i class="bi bi-pencil-square"></i>
               </button>
-              <button class="btn btn-outline-danger delete-ins-btn" data-id="${ins.id}" title="Delete">
+              <button class="btn btn-outline-danger delete-ins-btn" data-id="${ins.id}" title="Delete" aria-label="Delete inspector">
                 <i class="bi bi-trash"></i>
               </button>
             </div>
@@ -102,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
             async () => {
               if (inspectorsSpinner) inspectorsSpinner.classList.add('active');
               try {
-                await AppStorage.deleteInspector(ins.id);
+                await InspectorRepository.remove(ins.id);
                 UI.showToast('Inspector removed.');
                 await loadInspectorsTable();
               } catch (err) {
@@ -115,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
           );
         });
 
-        inspectorsTableBody.appendChild(tr);
+        return tr;
       });
     } catch (err) {
       console.error(err);
@@ -154,13 +152,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (inspectorsSpinner) inspectorsSpinner.classList.add('active');
     try {
       if (id) {
-        await AppStorage.updateInspector(id, name);
+        await InspectorRepository.update(id, name);
         UI.showToast('Inspector details updated.');
       } else {
-        await AppStorage.addInspector(name);
+        await InspectorRepository.add(name);
         UI.showToast('Inspector added successfully.');
       }
-      
+
       inspectorModal.hide();
       await loadInspectorsTable();
     } catch (err) {
@@ -176,24 +174,23 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadCommentsTable() {
     if (commentsSpinner) commentsSpinner.classList.add('active');
     try {
-      const comments = await AppStorage.getComments();
-      commentsTableBody.innerHTML = '';
+      const comments = await CommentRepository.getAll();
 
       if (comments.length === 0) {
         commentsTableBody.innerHTML = '<tr><td colspan="2" class="text-center py-4 text-muted">No comment presets defined.</td></tr>';
         return;
       }
 
-      comments.forEach(cmt => {
+      Utils.renderRows(commentsTableBody, comments, (cmt) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td class="font-monospace">${cmt.text}</td>
+          <td class="font-monospace">${Utils.escapeHtml(cmt.text)}</td>
           <td class="text-center">
             <div class="btn-group btn-group-sm">
-              <button class="btn btn-outline-secondary edit-cmt-btn" data-id="${cmt.id}" title="Rename">
+              <button class="btn btn-outline-secondary edit-cmt-btn" data-id="${cmt.id}" title="Rename" aria-label="Rename comment preset">
                 <i class="bi bi-pencil-square"></i>
               </button>
-              <button class="btn btn-outline-danger delete-cmt-btn" data-id="${cmt.id}" title="Delete">
+              <button class="btn btn-outline-danger delete-cmt-btn" data-id="${cmt.id}" title="Delete" aria-label="Delete comment preset">
                 <i class="bi bi-trash"></i>
               </button>
             </div>
@@ -211,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
             async () => {
               if (commentsSpinner) commentsSpinner.classList.add('active');
               try {
-                await AppStorage.deleteComment(cmt.id);
+                await CommentRepository.remove(cmt.id);
                 UI.showToast('Comment preset removed.');
                 await loadCommentsTable();
               } catch (err) {
@@ -224,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
           );
         });
 
-        commentsTableBody.appendChild(tr);
+        return tr;
       });
     } catch (err) {
       console.error(err);
@@ -263,10 +260,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (commentsSpinner) commentsSpinner.classList.add('active');
     try {
       if (id) {
-        await AppStorage.updateComment(id, text);
+        await CommentRepository.update(id, text);
         UI.showToast('Comment preset updated.');
       } else {
-        await AppStorage.addComment(text);
+        await CommentRepository.add(text);
         UI.showToast('Comment preset registered.');
       }
 

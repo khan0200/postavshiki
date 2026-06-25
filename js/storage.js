@@ -1,6 +1,8 @@
 /**
- * storage.js - Firebase Firestore Compat Storage Driver
- * Uses the Firebase Compat UMD libraries to allow local double-click execution (bypasses local CORS blocks).
+ * storage.js - Firebase Firestore Compat bootstrap.
+ * Initializes the SDK, enables offline persistence, and seeds demo data once.
+ * All actual data access goes through the Repository layer (js/repositories.js) -
+ * pages must never call `db.collection(...)` directly.
  */
 
 const firebaseConfig = {
@@ -16,13 +18,31 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// Seed Firestore collections if the database is brand new and empty
+// Enable offline persistence (cached reads across reloads, offline support).
+// Gracefully no-op if unsupported (private browsing, multiple open tabs, old browsers).
+db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
+  if (err.code === 'failed-precondition') {
+    console.warn('Firestore persistence unavailable: multiple tabs open without synchronizeTabs support.');
+  } else if (err.code === 'unimplemented') {
+    console.warn('Firestore persistence unavailable: browser does not support required APIs.');
+  } else {
+    console.warn('Firestore persistence could not be enabled:', err);
+  }
+});
+
+// Seed Firestore collections if the database is brand new and empty.
+// Gated behind a localStorage flag after the first confirmed non-empty check,
+// so this never re-runs the seeding probe read on every subsequent page load.
+const SEED_CHECK_FLAG = 'seedCheckComplete';
+
 async function seedFirestoreIfNeeded() {
+  if (localStorage.getItem(SEED_CHECK_FLAG) === '1') return;
+
   try {
     const suppliersSnap = await db.collection('suppliers').get();
     if (suppliersSnap.empty) {
       console.log('%c🌱 Seeding Firebase Firestore with initial industrial data...', 'color: green; font-weight: bold;');
-      
+
       // 1. Seed suppliers
       const suppliers = [
         { id: 'sup-1', name: 'Global Tech Components', createdAt: new Date().toISOString() },
@@ -39,13 +59,13 @@ async function seedFirestoreIfNeeded() {
         { id: 'part-1', supplierId: 'sup-1', supplierName: 'Global Tech Components', detailId: 'PN-8802', detailName: 'Microchip Controller A1', createdAt: new Date().toISOString() },
         { id: 'part-2', supplierId: 'sup-1', supplierName: 'Global Tech Components', detailId: 'PN-8805', detailName: 'Connector Assembly 4-Pin', createdAt: new Date().toISOString() },
         { id: 'part-3', supplierId: 'sup-1', supplierName: 'Global Tech Components', detailId: 'PN-8809', detailName: 'Voltage Regulator Module', createdAt: new Date().toISOString() },
-        
+
         { id: 'part-4', supplierId: 'sup-2', supplierName: 'Apex Logistics & Packaging', detailId: 'PN-4022', detailName: 'Corrugated Shipping Box Med', createdAt: new Date().toISOString() },
         { id: 'part-5', supplierId: 'sup-2', supplierName: 'Apex Logistics & Packaging', detailId: 'PN-4033', detailName: 'ESD Protective Bag Small', createdAt: new Date().toISOString() },
-        
+
         { id: 'part-6', supplierId: 'sup-3', supplierName: 'Delta Steel Works', detailId: 'PN-1090', detailName: 'Steel Support Bracket M10', createdAt: new Date().toISOString() },
         { id: 'part-7', supplierId: 'sup-3', supplierName: 'Delta Steel Works', detailId: 'PN-1100', detailName: 'Aluminium Mounting Plate', createdAt: new Date().toISOString() },
-        
+
         { id: 'part-8', supplierId: 'sup-4', supplierName: 'Nord Plastic Moldings', detailId: 'PN-3101', detailName: 'Plastic Enclosure IP67', createdAt: new Date().toISOString() },
         { id: 'part-9', supplierId: 'sup-4', supplierName: 'Nord Plastic Moldings', detailId: 'PN-3105', detailName: 'Rubber Gasket Spacer', createdAt: new Date().toISOString() }
       ];
@@ -131,6 +151,7 @@ async function seedFirestoreIfNeeded() {
       }
       console.log('%c✔️ Seeding complete.', 'color: green;');
     }
+    localStorage.setItem(SEED_CHECK_FLAG, '1');
   } catch (err) {
     console.error('Error during seeding check:', err);
   }
@@ -138,245 +159,3 @@ async function seedFirestoreIfNeeded() {
 
 // Run seeding asynchronously
 seedFirestoreIfNeeded();
-
-window.AppStorage = {
-  // --- SUPPLIERS ---
-  async getSuppliers() {
-    const snap = await db.collection('suppliers').get();
-    const list = [];
-    snap.forEach(d => {
-      list.push({ id: d.id, ...d.data() });
-    });
-    return list;
-  },
-
-  async getSupplierById(id) {
-    const snap = await db.collection('suppliers').doc(id).get();
-    return snap.exists ? { id: snap.id, ...snap.data() } : null;
-  },
-
-  async addSupplier(name) {
-    const docRef = await db.collection('suppliers').add({
-      name: name.trim(),
-      createdAt: new Date().toISOString()
-    });
-    return { id: docRef.id, name: name.trim() };
-  },
-
-  async updateSupplier(id, name) {
-    // 1. Update supplier name
-    await db.collection('suppliers').doc(id).update({ name: name.trim() });
-    
-    // 2. Cascade update supplierName in parts collection
-    const partsSnap = await db.collection('parts').where('supplierId', '==', id).get();
-    for (const pDoc of partsSnap.docs) {
-      await db.collection('parts').doc(pDoc.id).update({ supplierName: name.trim() });
-    }
-
-    // 3. Cascade update supplierName in records collection
-    const recordsSnap = await db.collection('records').where('supplierId', '==', id).get();
-    for (const rDoc of recordsSnap.docs) {
-      await db.collection('records').doc(rDoc.id).update({ supplierName: name.trim() });
-    }
-
-    return { id, name: name.trim() };
-  },
-
-  async deleteSupplier(id) {
-    // Delete supplier document
-    await db.collection('suppliers').doc(id).delete();
-
-    // Cascade delete associated parts in parts collection
-    const partsSnap = await db.collection('parts').where('supplierId', '==', id).get();
-    for (const pDoc of partsSnap.docs) {
-      await db.collection('parts').doc(pDoc.id).delete();
-    }
-    return true;
-  },
-
-  // --- PARTS ---
-  async getParts() {
-    const snap = await db.collection('parts').get();
-    const list = [];
-    snap.forEach(d => {
-      list.push({ id: d.id, ...d.data() });
-    });
-    return list;
-  },
-
-  async getPartsBySupplier(supplierId) {
-    const snap = await db.collection('parts').where('supplierId', '==', supplierId).get();
-    const list = [];
-    snap.forEach(d => {
-      list.push({ id: d.id, ...d.data() });
-    });
-    return list;
-  },
-
-  async addPart(supplierId, detailId, detailName) {
-    // Fetch supplier to capture current supplierName
-    const supplier = await this.getSupplierById(supplierId);
-    const supplierName = supplier ? supplier.name : 'Unknown Supplier';
-
-    const docRef = await db.collection('parts').add({
-      supplierId,
-      supplierName,
-      detailId: detailId.trim().toUpperCase(),
-      detailName: detailName.trim(),
-      createdAt: new Date().toISOString()
-    });
-    return { id: docRef.id, supplierId, supplierName, detailId, detailName };
-  },
-
-  async updatePart(id, detailId, detailName) {
-    await db.collection('parts').doc(id).update({
-      detailId: detailId.trim().toUpperCase(),
-      detailName: detailName.trim()
-    });
-    return { id, detailId, detailName };
-  },
-
-  async deletePart(id) {
-    await db.collection('parts').doc(id).delete();
-    return true;
-  },
-
-  async transferPart(partId, targetSupplierId) {
-    const targetSupplier = await this.getSupplierById(targetSupplierId);
-    const targetSupplierName = targetSupplier ? targetSupplier.name : 'Unknown Supplier';
-
-    await db.collection('parts').doc(partId).update({
-      supplierId: targetSupplierId,
-      supplierName: targetSupplierName
-    });
-    return { id: partId, supplierId: targetSupplierId, supplierName: targetSupplierName };
-  },
-
-  // --- INSPECTORS ---
-  async getInspectors() {
-    const snap = await db.collection('inspectors').get();
-    const list = [];
-    snap.forEach(d => {
-      list.push({ id: d.id, ...d.data() });
-    });
-    return list;
-  },
-
-  async getInspectorById(id) {
-    const snap = await db.collection('inspectors').doc(id).get();
-    return snap.exists ? { id: snap.id, ...snap.data() } : null;
-  },
-
-  async addInspector(fullName) {
-    const docRef = await db.collection('inspectors').add({
-      fullName: fullName.trim()
-    });
-    return { id: docRef.id, fullName: fullName.trim() };
-  },
-
-  async updateInspector(id, fullName) {
-    await db.collection('inspectors').doc(id).update({ fullName: fullName.trim() });
-    return { id, fullName: fullName.trim() };
-  },
-
-  async deleteInspector(id) {
-    await db.collection('inspectors').doc(id).delete();
-    return true;
-  },
-
-  // --- COMMENTS ---
-  async getComments() {
-    const snap = await db.collection('comments').get();
-    const list = [];
-    snap.forEach(d => {
-      list.push({ id: d.id, ...d.data() });
-    });
-    return list;
-  },
-
-  async addComment(text) {
-    const docRef = await db.collection('comments').add({
-      text: text.trim()
-    });
-    return { id: docRef.id, text: text.trim() };
-  },
-
-  async updateComment(id, text) {
-    await db.collection('comments').doc(id).update({ text: text.trim() });
-    return { id, text: text.trim() };
-  },
-
-  async deleteComment(id) {
-    await db.collection('comments').doc(id).delete();
-    return true;
-  },
-
-  // --- RECEIVING RECORDS ---
-  async getReceivingRecords() {
-    const snap = await db.collection('records').get();
-    const list = [];
-    snap.forEach(d => {
-      list.push({ id: d.id, ...d.data() });
-    });
-    return list;
-  },
-
-  async addReceivingRecord(record) {
-    const supplier = await this.getSupplierById(record.supplierId);
-    const supplierName = supplier ? supplier.name : 'Unknown Supplier';
-
-    const inspector = await this.getInspectorById(record.inspectorId);
-    const inspectorName = inspector ? inspector.fullName : 'Unknown Inspector';
-
-    const newRecord = {
-      date: record.date,
-      fn: record.fn.trim(),
-      supplierId: record.supplierId,
-      supplierName: supplierName,
-      detailId: record.detailId,
-      detailName: record.detailName,
-      quantity: Number(record.quantity),
-      checkedQuantity: Number(record.checkedQuantity),
-      returnedQuantity: Number(record.returnedQuantity),
-      inspectorId: record.inspectorId,
-      inspectorName: inspectorName,
-      comment: record.comment.trim(),
-      createdAt: new Date().toISOString()
-    };
-
-    const docRef = await db.collection('records').add(newRecord);
-    return { id: docRef.id, ...newRecord };
-  },
-
-  async deleteReceivingRecord(id) {
-    await db.collection('records').doc(id).delete();
-    return true;
-  },
-
-  async updateReceivingRecord(id, record) {
-    const supplier = await this.getSupplierById(record.supplierId);
-    const supplierName = supplier ? supplier.name : 'Unknown Supplier';
-
-    const inspector = await this.getInspectorById(record.inspectorId);
-    const inspectorName = inspector ? inspector.fullName : 'Unknown Inspector';
-
-    const updatedRecord = {
-      date: record.date,
-      fn: record.fn.trim(),
-      supplierId: record.supplierId,
-      supplierName: supplierName,
-      detailId: record.detailId,
-      detailName: record.detailName,
-      quantity: Number(record.quantity),
-      checkedQuantity: Number(record.checkedQuantity),
-      returnedQuantity: Number(record.returnedQuantity),
-      inspectorId: record.inspectorId,
-      inspectorName: inspectorName,
-      comment: record.comment.trim(),
-      updatedAt: new Date().toISOString()
-    };
-
-    await db.collection('records').doc(id).update(updatedRecord);
-    return { id, ...updatedRecord };
-  }
-};

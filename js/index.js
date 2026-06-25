@@ -11,12 +11,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const dateInput = document.getElementById('rec-date');
   const fnInput = document.getElementById('rec-fn');
   const supplierSelect = document.getElementById('rec-supplier');
-  
+
   const detailSearch = document.getElementById('rec-detail-search');
   const detailIdHidden = document.getElementById('rec-detail-id');
   const detailNameInput = document.getElementById('rec-detail-name');
   const detailDropdownMenu = document.getElementById('rec-detail-dropdown-menu');
-  
+
   const qtyInput = document.getElementById('rec-quantity');
   const checkedQtyInput = document.getElementById('rec-checked-qty');
   const returnedQtyInput = document.getElementById('rec-returned-qty');
@@ -37,13 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // State Management for Registration Screen
   let activeParts = []; // parts of the selected supplier
   let records = [];
-  let tableState = {
-    searchQuery: '',
-    sortColumn: 'date',
-    sortOrder: 'desc', // default newest first
-    currentPage: 1,
-    pageSize: 30
-  };
+  const tableState = Utils.createTableState({ sortColumn: 'date', sortOrder: 'desc', pageSize: 30 });
   let commentPresets = []; // cached comment presets
 
   // Set default date to today (local timezone) and set default quantities
@@ -53,12 +47,14 @@ document.addEventListener('DOMContentLoaded', () => {
   checkedQtyInput.value = '5';
   returnedQtyInput.value = '0';
 
-  // Helper to render filtered presets dropdown list
+  // --- COMMENT PRESETS DROPDOWN ---
+  // Uses a Bootstrap dropdown menu (<ul><li><a>...) driven by its own show()/hide()
+  // API, which is a different shape than the `.custom-dropdown-menu` widget used by
+  // the Detail ID search box below - so this stays a small dedicated renderer rather
+  // than forcing it through UI.createSearchableDropdown's <div> item markup.
   function renderCommentPresets(filter = '') {
     commentPresetsList.innerHTML = '';
-    const filtered = commentPresets.filter(cmt =>
-      cmt.text.toLowerCase().includes(filter.toLowerCase())
-    );
+    const filtered = commentPresets.filter(cmt => cmt.text.toLowerCase().includes(filter.toLowerCase()));
 
     if (filtered.length === 0) {
       const li = document.createElement('li');
@@ -67,12 +63,13 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    const fragment = document.createDocumentFragment();
     filtered.forEach(cmt => {
       const li = document.createElement('li');
-      li.innerHTML = `<a class="dropdown-item" href="#">${cmt.text}</a>`;
+      li.innerHTML = `<a class="dropdown-item" href="#">${Utils.escapeHtml(cmt.text)}</a>`;
       li.querySelector('a').addEventListener('click', (e) => {
         e.preventDefault();
-        
+
         const parts = commentInput.value.split(',').map(p => p.trim());
         if (parts.length > 0) {
           parts[parts.length - 1] = cmt.text;
@@ -80,38 +77,37 @@ document.addEventListener('DOMContentLoaded', () => {
           parts.push(cmt.text);
         }
         commentInput.value = parts.filter(p => p !== '').join(', ');
-        
-        // Re-render full list for next open
+
         renderCommentPresets('');
-        
-        // Hide dropdown
+
         const dropdownToggle = document.getElementById('presets-dropdown-btn');
         if (dropdownToggle) {
-          const dropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
-          dropdown.hide();
+          bootstrap.Dropdown.getOrCreateInstance(dropdownToggle).hide();
         }
-        
+
         commentInput.focus();
       });
-      commentPresetsList.appendChild(li);
+      fragment.appendChild(li);
     });
+    commentPresetsList.appendChild(fragment);
   }
 
-  // Initialize form drop downs
+  // Initialize form drop downs - independent collections loaded in parallel.
   async function loadFormDropdowns() {
     if (formSpinner) formSpinner.classList.add('active');
     try {
-      // Populate Suppliers
-      const suppliers = await AppStorage.getSuppliers();
-      const parts = await AppStorage.getParts();
-      
+      const [suppliers, parts, inspectors, comments] = await Promise.all([
+        SupplierRepository.getAll(),
+        PartRepository.getAll(),
+        InspectorRepository.getAll(),
+        CommentRepository.getAll()
+      ]);
+
       supplierSelect.innerHTML = '<option value="" selected disabled>Choose Supplier...</option>';
-      suppliers.sort((a, b) => {
+      suppliers.slice().sort((a, b) => {
         const countA = parts.filter(p => p.supplierId === a.id).length;
         const countB = parts.filter(p => p.supplierId === b.id).length;
-        if (countB !== countA) {
-          return countB - countA;
-        }
+        if (countB !== countA) return countB - countA;
         return a.name.localeCompare(b.name);
       }).forEach(sup => {
         const opt = document.createElement('option');
@@ -120,18 +116,15 @@ document.addEventListener('DOMContentLoaded', () => {
         supplierSelect.appendChild(opt);
       });
 
-      // Populate Inspectors
-      const inspectors = await AppStorage.getInspectors();
       inspectorSelect.innerHTML = '<option value="" selected disabled>Select Inspector...</option>';
-      inspectors.sort((a, b) => a.fullName.localeCompare(b.fullName)).forEach(ins => {
+      inspectors.slice().sort((a, b) => a.fullName.localeCompare(b.fullName)).forEach(ins => {
         const opt = document.createElement('option');
         opt.value = ins.id;
         opt.textContent = ins.fullName;
         inspectorSelect.appendChild(opt);
       });
 
-      // Populate Predefined Comments
-      commentPresets = await AppStorage.getComments();
+      commentPresets = comments;
       renderCommentPresets('');
     } catch (err) {
       console.error('Error loading dropdowns:', err);
@@ -150,12 +143,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const dropdownToggle = document.getElementById('presets-dropdown-btn');
     if (dropdownToggle) {
       const dropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
-      
-      // Only show if there's text being typed and matches found
+
       const filtered = commentPresets.filter(cmt =>
         cmt.text.toLowerCase().includes(query.toLowerCase())
       );
-      
+
       if (query.length > 0 && filtered.length > 0) {
         dropdown.show();
       } else {
@@ -173,21 +165,52 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // --- SEARCHABLE DETAIL ID DROPDOWN (shared component) ---
+  const detailDropdown = UI.createSearchableDropdown({
+    inputEl: detailSearch,
+    menuEl: detailDropdownMenu,
+    getItems: () => activeParts,
+    filterFn: (part, query) =>
+      part.detailId.toLowerCase().includes(query.toLowerCase()) ||
+      part.detailName.toLowerCase().includes(query.toLowerCase()),
+    renderItem: (part) => `
+      <span class="fw-semibold text-primary">${Utils.escapeHtml(part.detailId)}</span>
+      <span class="small text-muted text-truncate ms-2" style="max-width: 180px;">${Utils.escapeHtml(part.detailName)}</span>
+    `,
+    onSelect: (part) => {
+      detailSearch.value = part.detailId;
+      detailIdHidden.value = part.detailId;
+      detailNameInput.value = part.detailName;
+      detailDropdownMenu.classList.remove('show');
+      detailSearch.classList.remove('is-invalid');
+    },
+    emptyText: 'No parts found'
+  });
+  // The generic component's item markup is `<span>...</span>` pairs with no
+  // flex wrapper; this page's CSS expects the flex/justify classes on the
+  // item element itself, so override the row class after each render call.
+  function renderDetailDropdownMenu(filter = '') {
+    detailDropdown.render(filter);
+    detailDropdownMenu.querySelectorAll('.custom-dropdown-item').forEach(el => {
+      el.classList.add('d-flex', 'justify-content-between', 'align-items-center');
+    });
+  }
+
   // --- SEARCHABLE DETAIL ID DROPDOWN LOGIC ---
   supplierSelect.addEventListener('change', async () => {
     const selectedSupplierId = supplierSelect.value;
-    
+
     // Reset Part fields
     detailSearch.value = '';
     detailIdHidden.value = '';
     detailNameInput.value = '';
-    
+
     if (selectedSupplierId) {
       detailSearch.disabled = true;
       detailSearch.placeholder = 'Loading parts...';
       if (formSpinner) formSpinner.classList.add('active');
       try {
-        activeParts = await AppStorage.getPartsBySupplier(selectedSupplierId);
+        activeParts = await PartRepository.getBySupplier(selectedSupplierId);
         detailSearch.disabled = false;
         detailSearch.placeholder = 'Type to search Detail ID...';
         renderDetailDropdownMenu();
@@ -204,39 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  function renderDetailDropdownMenu(filter = '') {
-    detailDropdownMenu.innerHTML = '';
-    
-    const filteredParts = activeParts.filter(part => 
-      part.detailId.toLowerCase().includes(filter.toLowerCase()) || 
-      part.detailName.toLowerCase().includes(filter.toLowerCase())
-    );
-
-    if (filteredParts.length === 0) {
-      detailDropdownMenu.innerHTML = '<div class="px-3 py-2 text-muted small">No parts found</div>';
-      return;
-    }
-
-    filteredParts.forEach(part => {
-      const item = document.createElement('div');
-      item.className = 'custom-dropdown-item d-flex justify-content-between align-items-center';
-      item.innerHTML = `
-        <span class="fw-semibold text-primary">${part.detailId}</span>
-        <span class="small text-muted text-truncate ms-2" style="max-width: 180px;">${part.detailName}</span>
-      `;
-      item.addEventListener('click', () => {
-        detailSearch.value = part.detailId;
-        detailIdHidden.value = part.detailId;
-        detailNameInput.value = part.detailName;
-        detailDropdownMenu.classList.remove('show');
-        
-        // Remove invalid indicators if selected
-        detailSearch.classList.remove('is-invalid');
-      });
-      detailDropdownMenu.appendChild(item);
-    });
-  }
-
   detailSearch.addEventListener('focus', () => {
     if (activeParts.length > 0) {
       renderDetailDropdownMenu(detailSearch.value);
@@ -248,23 +238,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // Hidden ID becomes invalid when user is actively typing, unless it matches exactly
     detailIdHidden.value = '';
     detailNameInput.value = '';
-    
+
     // Check for exact match
     const exactMatch = activeParts.find(p => p.detailId.toUpperCase() === detailSearch.value.trim().toUpperCase());
     if (exactMatch) {
       detailIdHidden.value = exactMatch.detailId;
       detailNameInput.value = exactMatch.detailName;
     }
-    
+
     renderDetailDropdownMenu(detailSearch.value);
   });
 
-  // Hide dropdown menu on click outside
+  // Hide dropdown menu on click outside (additional cleanup specific to this page:
+  // clear a non-exact-match search value, on top of the shared component's hide logic).
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.custom-dropdown-container')) {
-      detailDropdownMenu.classList.remove('show');
-      
-      // If user clicks outside and left a non-exact match, clean it up
       if (!detailIdHidden.value) {
         detailSearch.value = '';
       }
@@ -284,31 +272,31 @@ document.addEventListener('DOMContentLoaded', () => {
   clearFormBtn.addEventListener('click', () => {
     fnInput.value = '';
     supplierSelect.value = '';
-    
+
     detailSearch.value = '';
     detailSearch.disabled = true;
     detailSearch.placeholder = 'Select supplier first...';
     detailIdHidden.value = '';
     detailNameInput.value = '';
-    
+
     qtyInput.value = '';
     commentInput.value = '';
-    
+
     // Clear validation classes
     form.querySelectorAll('.is-invalid').forEach(elem => elem.classList.remove('is-invalid'));
     form.querySelectorAll('.is-valid').forEach(elem => elem.classList.remove('is-valid'));
     form.classList.remove('was-validated');
-    
+
     // Hide the clear button
     clearFormBtn.classList.add('d-none');
-    
+
     fnInput.focus();
   });
 
   // --- QUANTITIES AUTO-VALIDATION HELPER ---
   qtyInput.addEventListener('input', () => {
     const qtyStr = qtyInput.value;
-    
+
     if (qtyStr !== '') {
       const qty = Number(qtyStr);
       // Auto-cap checked quantity only if it exceeds the new received quantity
@@ -328,7 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (qtyInput.value !== '') {
       const qty = Number(qtyInput.value);
       const checked = Number(checkedQtyInput.value);
-      
+
       if (checked > qty) {
         checkedQtyInput.value = qty;
       }
@@ -350,7 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- FORM VALIDATION & SUBMISSION ---
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     let isValid = true;
     form.classList.remove('was-validated');
 
@@ -373,17 +361,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Detail ID Searchable Dropdown Check
     setValidation(detailSearch, detailIdHidden.value !== '');
 
-    // Qty Check (> 0)
+    // Quantity relationship checks (shared validator - same rule used by the
+    // supplier-page "Edit Delivery Record" modal).
     const qty = Number(qtyInput.value);
-    setValidation(qtyInput, qtyInput.value !== '' && qty > 0);
-
-    // Checked Qty Check (<= Qty, >= 0)
     const checked = Number(checkedQtyInput.value);
-    setValidation(checkedQtyInput, checkedQtyInput.value !== '' && checked >= 0 && checked <= qty);
-
-    // Returned Qty Check (<= Checked, >= 0)
     const returned = Number(returnedQtyInput.value);
-    setValidation(returnedQtyInput, returnedQtyInput.value !== '' && returned >= 0 && returned <= checked);
+    const { qtyValid, checkedValid, returnedValid } = Utils.validateQuantities(qty, checked, returned);
+
+    setValidation(qtyInput, qtyInput.value !== '' && qtyValid);
+    setValidation(checkedQtyInput, checkedQtyInput.value !== '' && checkedValid);
+    setValidation(returnedQtyInput, returnedQtyInput.value !== '' && returnedValid);
 
     // Inspector Check
     setValidation(inspectorSelect, inspectorSelect.value !== '');
@@ -397,29 +384,32 @@ document.addEventListener('DOMContentLoaded', () => {
     submitBtn.disabled = true;
     formSpinner.classList.add('active');
 
-    // Record submission payload
+    // Names are already known from the selected <option> text, so the repository
+    // does not need to re-fetch the supplier/inspector documents to denormalize them.
     const record = {
       date: dateInput.value,
       fn: fnInput.value,
       supplierId: supplierSelect.value,
+      supplierName: supplierSelect.options[supplierSelect.selectedIndex].textContent,
       detailId: detailIdHidden.value,
       detailName: detailNameInput.value,
       quantity: qty,
       checkedQuantity: checked,
       returnedQuantity: returned,
       inspectorId: inspectorSelect.value,
+      inspectorName: inspectorSelect.options[inspectorSelect.selectedIndex].textContent,
       comment: commentInput.value || 'OK'
     };
 
     try {
-      await AppStorage.addReceivingRecord(record);
+      await ReceivingRepository.add(record);
       UI.showToast('Receiving record registered successfully!');
-      
+
       // Keep last entered inputs in the form, just clear the validation formatting styles
       form.classList.remove('was-validated');
       form.querySelectorAll('.is-valid').forEach(el => el.classList.remove('is-valid'));
       form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-      
+
       // Refresh log table
       await loadTableRecords();
     } catch (err) {
@@ -432,51 +422,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  function resetFormExceptDate() {
-    fnInput.value = '';
-    supplierSelect.value = '';
-    
-    detailSearch.value = '';
-    detailSearch.disabled = true;
-    detailSearch.placeholder = 'Select supplier first...';
-    detailIdHidden.value = '';
-    detailNameInput.value = '';
-    
-    qtyInput.value = '';
-    checkedQtyInput.value = '5';
-    returnedQtyInput.value = '0';
-    inspectorSelect.value = '';
-    commentInput.value = '';
-    
-    // Clear validation classes
-    form.querySelectorAll('.is-invalid').forEach(elem => elem.classList.remove('is-invalid'));
-    form.querySelectorAll('.is-valid').forEach(elem => elem.classList.remove('is-valid'));
-    form.classList.remove('was-validated');
-  }
-
   // --- LOG TABLE RENDER ENGINE ---
   async function loadTableRecords() {
     if (tableSpinner) tableSpinner.classList.add('active');
     try {
-      const rawRecords = await AppStorage.getReceivingRecords();
-      const suppliers = await AppStorage.getSuppliers();
-      const inspectors = await AppStorage.getInspectors();
-
-      // Map names for searching and display
-      records = rawRecords.map(rec => {
-        const sup = suppliers.find(s => s.id === rec.supplierId);
-        const ins = inspectors.find(i => i.id === rec.inspectorId);
-        return {
-          ...rec,
-          supplierName: sup ? sup.name : 'Unknown Supplier',
-          inspectorName: ins ? ins.fullName : 'Unknown Inspector'
-        };
-      });
-
-      // Sort by date desc to get newest first, then limit to top 30
-      records.sort((a, b) => new Date(b.date) - new Date(a.date));
-      records = records.slice(0, 30);
-
+      // Firestore-side orderBy+limit(30) replaces "download everything, sort,
+      // slice to 30" - reads are now proportional to what's displayed.
+      records = await ReceivingRepository.getLatest(tableState.pageSize);
       renderTable();
     } catch (err) {
       console.error('Error loading table records:', err);
@@ -487,121 +439,70 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderTable() {
     // 1. Filter
-    let filtered = records.filter(rec => {
-      const q = tableState.searchQuery.toLowerCase();
-      return (
-        rec.fn.toLowerCase().includes(q) ||
-        rec.supplierName.toLowerCase().includes(q) ||
-        rec.detailId.toLowerCase().includes(q) ||
-        rec.detailName.toLowerCase().includes(q) ||
-        rec.inspectorName.toLowerCase().includes(q) ||
-        rec.comment.toLowerCase().includes(q)
-      );
-    });
+    const q = tableState.searchQuery.toLowerCase();
+    let filtered = records.filter(rec =>
+      rec.fn.toLowerCase().includes(q) ||
+      rec.supplierName.toLowerCase().includes(q) ||
+      rec.detailId.toLowerCase().includes(q) ||
+      rec.detailName.toLowerCase().includes(q) ||
+      rec.inspectorName.toLowerCase().includes(q) ||
+      rec.comment.toLowerCase().includes(q)
+    );
 
-    // 2. Sort
-    filtered.sort((a, b) => {
-      let valA = a[tableState.sortColumn];
-      let valB = b[tableState.sortColumn];
-
-      if (typeof valA === 'string') {
-        valA = valA.toLowerCase();
-        valB = valB.toLowerCase();
-      }
-
-      if (valA < valB) return tableState.sortOrder === 'asc' ? -1 : 1;
-      if (valA > valB) return tableState.sortOrder === 'asc' ? 1 : -1;
-      return 0;
-    });
+    // 2. Sort (shared utility - identical behavior to the previous inline comparator)
+    filtered = Utils.sortRecords(filtered, tableState.sortColumn, tableState.sortOrder);
 
     // Render Rows
     const totalEntries = filtered.length;
-    tableBody.innerHTML = '';
-    
+
     if (totalEntries === 0) {
+      tableBody.innerHTML = '';
       emptyState.classList.remove('d-none');
-      tableInfoSummary.textContent = `Showing 0 of ${records.length} entries (latest 30)`;
+      tableInfoSummary.textContent = `Showing 0 of ${records.length} entries (latest ${tableState.pageSize})`;
       return;
     }
-    
-    emptyState.classList.add('d-none');
-    tableInfoSummary.textContent = `Showing ${totalEntries} of ${records.length} entries (latest 30)`;
 
-    filtered.forEach(rec => {
+    emptyState.classList.add('d-none');
+    tableInfoSummary.textContent = `Showing ${totalEntries} of ${records.length} entries (latest ${tableState.pageSize})`;
+
+    Utils.renderRows(tableBody, filtered, (rec) => {
       const tr = document.createElement('tr');
-      
+
       // Determine color badge style based on returns
       let borderClass = 'badge-record-green';
       if (rec.returnedQuantity > 0) {
-        if (rec.returnedQuantity === rec.checkedQuantity) {
-          borderClass = 'badge-record-red';
-        } else {
-          borderClass = 'badge-record-yellow';
-        }
+        borderClass = rec.returnedQuantity === rec.checkedQuantity ? 'badge-record-red' : 'badge-record-yellow';
       }
       tr.className = borderClass;
 
-      // Status Badge HTML
-      let badgeHtml = '';
-      if (rec.returnedQuantity === 0) {
-        badgeHtml = `<span class="badge bg-success-subtle text-success">OK</span>`;
-      } else if (rec.returnedQuantity === rec.checkedQuantity) {
-        badgeHtml = `<span class="badge bg-danger-subtle text-danger">Returned</span>`;
-      } else {
-        badgeHtml = `<span class="badge bg-warning-subtle text-warning-emphasis">Partial</span>`;
-      }
-
       tr.innerHTML = `
-        <td class="small fw-semibold text-nowrap">${rec.date}</td>
-        <td><code class="text-secondary fw-semibold">${rec.fn}</code></td>
-        <td class="text-truncate" style="max-width: 140px;" title="${rec.supplierName}">${rec.supplierName}</td>
-        <td><span class="badge bg-light text-dark font-monospace">${rec.detailId}</span></td>
-        <td class="text-truncate" style="max-width: 140px;" title="${rec.detailName}">${rec.detailName}</td>
+        <td class="small fw-semibold text-nowrap">${Utils.escapeHtml(rec.date)}</td>
+        <td><code class="text-secondary fw-semibold">${Utils.escapeHtml(rec.fn)}</code></td>
+        <td class="text-truncate" style="max-width: 140px;" title="${Utils.escapeHtml(rec.supplierName)}">${Utils.escapeHtml(rec.supplierName)}</td>
+        <td><span class="badge bg-light text-dark font-monospace">${Utils.escapeHtml(rec.detailId)}</span></td>
+        <td class="text-truncate" style="max-width: 140px;" title="${Utils.escapeHtml(rec.detailName)}">${Utils.escapeHtml(rec.detailName)}</td>
         <td class="text-end fw-semibold">${rec.quantity}</td>
         <td class="text-end text-success">${rec.checkedQuantity}</td>
         <td class="text-end text-danger">${rec.returnedQuantity}</td>
-        <td class="small">${rec.inspectorName}</td>
-        <td class="text-truncate small" style="max-width: 120px;" title="${rec.comment}">${rec.comment}</td>
+        <td class="small">${Utils.escapeHtml(rec.inspectorName)}</td>
+        <td class="text-truncate small" style="max-width: 120px;" title="${Utils.escapeHtml(rec.comment)}">${Utils.escapeHtml(rec.comment)}</td>
       `;
 
-      tableBody.appendChild(tr);
+      return tr;
     });
   }
 
-  // Sorting columns triggers
-  document.querySelectorAll('.sortable-header').forEach(header => {
-    header.addEventListener('click', () => {
-      const column = header.getAttribute('data-sort');
-      
-      // Update visual indicators
-      document.querySelectorAll('.sortable-header').forEach(h => {
-        if (h !== header) {
-          h.classList.remove('asc', 'desc');
-        }
-      });
+  // Sorting columns triggers (shared helper - identical behavior to the previous
+  // hand-rolled listener, now also used identically on the Suppliers page tables)
+  Utils.bindSortableHeaders('#records-table', tableState, renderTable);
 
-      if (tableState.sortColumn === column) {
-        tableState.sortOrder = tableState.sortOrder === 'asc' ? 'desc' : 'asc';
-      } else {
-        tableState.sortColumn = column;
-        tableState.sortOrder = 'asc';
-      }
-
-      header.classList.remove('asc', 'desc');
-      header.classList.add(tableState.sortOrder);
-
-      renderTable();
-    });
-  });
-
-  // Search input triggers
-  tableSearchInput.addEventListener('input', () => {
+  // Search input triggers - debounced so fast typing doesn't re-render on every keystroke
+  tableSearchInput.addEventListener('input', Utils.debounce(() => {
     tableState.searchQuery = tableSearchInput.value.trim();
     tableState.currentPage = 1;
     renderTable();
-  });
+  }, 250));
 
-  // Initial Load
-  loadFormDropdowns();
-  loadTableRecords();
+  // Initial Load - independent dropdown data and table data load in parallel
+  Promise.all([loadFormDropdowns(), loadTableRecords()]);
 });

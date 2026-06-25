@@ -1,0 +1,814 @@
+================================================================================
+COMPLETE APPLICATION AUDIT
+Parts Receiving Management System
+================================================================================
+Date: 2026-06-25
+Scope: index.html, supplier.html, settings.html, css/style.css,
+       js/{app,storage,ui,index,settings,supplier}.js (4,029 lines total)
+Stack: Vanilla HTML5/CSS3/ES6+, Bootstrap 5, Firebase Firestore (Compat SDK),
+       Chart.js. No build tooling, no bundler, all libraries via CDN.
+
+================================================================================
+EXECUTIVE SUMMARY
+================================================================================
+This is a small, clean, well-organized codebase for what it is (no duplicate
+files, no duplicate libraries, consistent naming, no circular imports). The
+DOMINANT PROBLEM BY AN ENORMOUS MARGIN is Firestore read behavior: virtually
+every user interaction re-downloads entire collections from the network, with
+zero caching, zero pagination at the database level, and zero realtime
+listeners. On a live Firestore project this directly multiplies dollar cost
+and load latency. Close behind in urgency is a set of security gaps (missing
+security rules, no authentication, unescaped innerHTML/XSS) that should be
+treated as equally critical. Everything else (CSS, UI consistency, code
+quality) is comparatively minor polish.
+
+================================================================================
+1. ARCHITECTURE REVIEW
+================================================================================
+
+FINDING: No duplicate files/libraries
+  Severity: None (positive finding)
+  Bootstrap, Bootstrap Icons, Chart.js, Firebase each loaded exactly once per
+  page, no version conflicts.
+
+FINDING: app.js is dead weight
+  File: js/app.js
+  Severity: Low
+  9 lines, only does console.log. Misleading: log text says "Storage Mode:
+  LocalStorage Driver Active" but the app uses Firestore -- leftover from an
+  earlier localStorage-based version. Harmless but confusing for future
+  maintainers.
+
+FINDING: Auto-seeding runs on every page load
+  File: js/storage.js:140 (seedFirestoreIfNeeded())
+  Severity: High
+  Runs an "await db.collection('suppliers').get()" check on EVERY SINGLE
+  page load of all 3 pages, forever, even when the DB obviously already has
+  data. This is a permanent extra read on every visit with no way to disable
+  it.
+
+FINDING: Cascade-update logic duplicated conceptually, not in code
+  File: storage.js: updateSupplier, deleteSupplier
+  Severity: Medium
+  Not literal code duplication, but the pattern "fetch all docs where
+  supplierId == X, then loop .update()/.delete() one at a time" is repeated
+  3 times (parts cascade in update, parts+records cascade in update, parts
+  cascade in delete) -- see Firestore section for the N+1 problem this
+  creates.
+
+FINDING: getSupplierById/getInspectorById re-fetched repeatedly instead of
+  cached
+  File: storage.js, called from index.js, supplier.js
+  Severity: High (covered in Firestore section)
+  Architectural: there is no shared client-side cache layer at all -- every
+  controller independently calls AppStorage.getX() afresh.
+
+FINDING: No reusable rendering/pagination component extracted to ui.js
+  File: supplier.js:918-960 (renderPagination)
+  Severity: Medium
+  Good that pagination is a shared FUNCTION, but it lives inside supplier.js
+  instead of ui.js, even though ui.js's explicit purpose (per its own header
+  comment) is "Reusable UI components & Helpers." index.js's table doesn't
+  use pagination at all (just slices top 30) -- inconsistent pattern across
+  pages.
+
+FINDING: Inline style attributes scattered across HTML
+  File: supplier.html (lines 156, 164, 203, 215, 250, 256, 280, 290, 307, 399)
+  Severity: Low
+  e.g. style="max-width: 250px;", style="width: 100px;" repeated almost
+  identically across 3 HTML files instead of utility CSS classes.
+
+FINDING: No circular imports
+  Severity: None (positive finding)
+  Scripts are simple global-namespace UMD style (window.AppStorage,
+  window.UI); load order in HTML is consistent across all 3 pages
+  (storage.js -> ui.js -> app.js -> page.js).
+
+FINDING: Folder organization is fine for project size
+  Severity: None (positive finding)
+  css/, js/ separation is reasonable for a 6-file vanilla app; no need to
+  restructure.
+
+FINDING: supplier.js is doing too much (1159 lines)
+  File: js/supplier.js
+  Severity: Medium
+  Single file handles: supplier CRUD, parts CRUD, transfer modal, receiving-
+  record edit/delete, history table, parts table, pagination, year/month
+  chart filtering, and chart rendering. Candidate for splitting into logical
+  modules (e.g., supplier-crud.js, parts.js, charts.js).
+
+================================================================================
+2. CSS AUDIT (css/style.css, 391 lines)
+================================================================================
+
+FINDING: Heavy !important usage
+  Location: Lines 42-43, 83-85, 90, 106, 313, 316, 319, 324, 327, 330, 336,
+            348-379, 386-387
+  Severity: Medium
+  ~20 !important declarations. Most are needed to override Bootstrap's own
+  !important/specificity (e.g. .list-group-item.active), but the form-column
+  width overrides (lines 348-379) use !important purely to beat Bootstrap's
+  .col-* classes -- a sign the markup should use custom classes without
+  competing against Bootstrap's grid instead of overriding it.
+
+FINDING: Magic pixel/percent values not tokenized
+  Location: Lines 302-309, 348-379
+  Severity: Low
+  600px, 580px, 400px, 12%, 20%, 23%, 33%, 10%, 50% are hardcoded with no CSS
+  variables/tokens. The form layout has been adjusted 3 times in recent
+  commit history -- every value must be hunted down individually.
+
+FINDING: Duplicate dark-mode override pattern repeated 6 times
+  Location: Lines 78, 89, 194, 207, 229, 253
+  Severity: Low (acceptable)
+  [data-bs-theme="dark"] .selector {...} pattern repeated for list-group,
+  active item, dropdown hover, navbar, overlay, scrollbar. Not true
+  duplication, but line 202's rgba(255,255,255,0.8) is NOT tokenized while
+  --bg-card etc. are -- inconsistent extension of the existing token system.
+
+FINDING: Hardcoded color repeated instead of using existing tokens
+  Location: Lines 126-135, 268-290 (CSS); also JS lines 1073-1074
+  Severity: Low
+  #198754, #ffc107, #dc3545 (Bootstrap status colors) and #0f172a/#38bdf8
+  (already defined as --accent-color) are hardcoded directly rather than
+  reusing var(--accent-color) -- e.g. .btn-primary (line 269) hardcodes
+  #0f172a even though --accent-color: #0f172a already exists one line
+  earlier in the same cascade context.
+
+FINDING: No unused CSS detected
+  Severity: None (positive finding)
+  Every class in style.css (.badge-record-*, .custom-dropdown-*,
+  .scroll-height-*, .sortable-header, .chart-container, .loading-overlay,
+  .form-col-*) is referenced in the HTML/JS. No leftover/orphaned rules.
+
+FINDING: No conflicting selectors / no z-index conflicts
+  Severity: None (positive finding)
+  Only two z-index declarations in the file (.table th: 2, .navbar: 1030),
+  plus toast container (1100, set inline in ui.js) -- no collisions.
+
+FINDING: Inline style in ui.js for z-index instead of CSS class
+  File: js/ui.js:38 (div.style.zIndex = '1100')
+  Severity: Low
+  Should be a CSS class (.toast-container-layer) rather than a JS-set inline
+  style, for consistency with the rest of the codebase which avoids inline
+  styles.
+
+FINDING: Media query strategy is height-based, not just width-based
+  Location: Line 311 (@media (max-height: 1024px))
+  Severity: Low (note, not a bug)
+  Unusual but intentional choice (compact layout on short viewports/
+  laptops). Works, but mixing max-height and min-width (line 346) media
+  queries makes mental modeling of breakpoints harder to maintain.
+
+CSS THAT CAN SAFELY BE REMOVED: None -- the stylesheet is lean and fully
+  utilized. No dead rules found.
+
+================================================================================
+3. UI/UX REVIEW
+================================================================================
+
+FINDING: Inconsistent button radius/spacing scale
+  Pages: All
+  Severity: Low
+  .btn global border-radius (0.5rem) is consistent, but icon-only action
+  buttons mix btn-sm with border-0 py-0 px-1 overrides (supplier.js:577-582)
+  vs. full btn-group btn-group-sm elsewhere (settings.js:83-90) -- two
+  different visual densities for the same "row action icon button" pattern.
+
+FINDING: Empty-state pattern duplicated 4x with slightly different markup
+  Location: index.html:217-221, supplier.html:183-186/229-232,
+            settings.js:74/183
+  Severity: Medium
+  Two different empty-state idioms exist: (a) icon + heading + paragraph
+  markup in HTML vs. (b) plain <tr><td colspan> string in settings.js.
+  Should converge on one empty-state component.
+
+FINDING: Table column count mismatch (REAL BUG)
+  Location: supplier.js:221-222 vs supplier.html:168-177
+  Severity: Critical
+  historyTableBody placeholder row uses colspan="8" while the <thead> in
+  supplier.html has 9 columns (Date, FN, Detail ID, Detail Name, Qty,
+  Checked, Returned, Inspector, Action = 9). The placeholder row will be
+  visually misaligned/short one column.
+
+FINDING: No accessible labeling on icon-only buttons beyond title
+  Pages: All
+  Severity: Low
+  title attribute alone (e.g. supplier.html:120-124 Rename/Delete buttons)
+  is not reliably read by all assistive tech; should pair with aria-label.
+
+FINDING: Color contrast on muted badges
+  Location: index.js:547-551, supplier.js history rows
+  Severity: Low
+  bg-warning-subtle text-warning-emphasis and similar Bootstrap subtle-badge
+  combos can fall under WCAG AA contrast minimums depending on theme --
+  worth a contrast-checker pass, not breaking today.
+
+FINDING: Loading spinners are per-card, inconsistent trigger granularity
+  Pages: All
+  Severity: Low
+  Some operations show only one spinner, others show two simultaneously
+  (supplierListSpinner + supplierDetailSpinner in btnDeleteSupplier handler,
+  supplier.js:317-318) -- minor UX inconsistency, not a functional bug.
+
+FINDING: Responsive form columns use fixed % widths that can break on
+  narrow tablet widths
+  Location: style.css:346-379
+  Severity: Medium
+  .form-col-detail-id { width: 23% } etc. only kick in at min-width: 768px
+  with no intermediate breakpoint -- between 768-991px (tablet portrait)
+  five columns squeezed at fixed percentages could crowd input text. Worth
+  checking at 768-820px viewport widths in a real browser.
+
+FINDING: No skeleton/placeholder loading state for tables
+  Severity: Low (cosmetic, not a defect)
+  Acceptable pattern as-is, just noting as an opportunity.
+
+OVERALL: UI consistency is good -- single shared navbar component
+  (UI.initNavbar), consistent card/modal patterns, consistent Bootstrap
+  Icons usage throughout. No major redesign needed.
+
+================================================================================
+4. JAVASCRIPT REVIEW
+================================================================================
+
+FINDING: Identical sort-comparator logic duplicated 3 times
+  Location: index.js:503-515 (renderTable), supplier.js:513-525
+            (loadHistoryTable), supplier.js:665-677 (loadPartsTable)
+  Severity: High
+  The exact same generic "lowercase strings, compare, respect asc/desc" sort
+  function is hand-written three separate times across two files. Should be
+  one shared UI.sortBy(array, column, order) utility.
+
+FINDING: Identical pagination-state shape duplicated
+  Location: index.js (tableState), supplier.js (historyState, partsState)
+  Severity: Medium
+  Same { searchQuery, sortColumn, sortOrder, currentPage, pageSize } object
+  literal defined 3 times. Should be a factory function
+  createTableState(defaults).
+
+FINDING: renderPagination exists but index.js's table doesn't use it
+  Location: index.js (no pagination, just slices top 30) vs supplier.js:918
+  Severity: Medium (also a functional gap)
+  Inconsistent UX/code path: the main registry table arbitrarily hard-limits
+  to the latest 30 records with no paging at all, while the supplier detail
+  tables paginate at 30/page. If the user wants to see record #31 on the
+  Register page, there is NO WAY TO DO IT.
+
+FINDING: Duplicate event-listener-cloning pattern
+  Location: ui.js:79-81 (confirm() clones the OK button to strip old
+            listeners)
+  Severity: Low
+  Clever but fragile pattern -- works correctly today but is a manual
+  workaround for what addEventListener with { once: true } would solve more
+  simply and robustly.
+
+FINDING: Two near-identical "type to filter" dropdown implementations
+  Location: index.js:56-98 (renderCommentPresets) and index.js:207-238
+            (renderDetailDropdownMenu)
+  Severity: Medium
+  Two custom autocomplete/search-dropdown implementations in the same file
+  with overlapping logic (filter array by substring, build DOM nodes, attach
+  click handler, clear/hide on outside click) that could be a single
+  reusable createSearchableDropdown() helper.
+
+FINDING: Global outside-click listener only handles ONE dropdown
+  Location: index.js:263-272
+  Severity: Low
+  If more searchable dropdowns are added later, each will need its own
+  global click listener -- doesn't scale, but isn't broken today.
+
+FINDING: Duplicated qty/checked/returned validation logic
+  Location: supplier.js:404-427 vs index.js:377-389
+  Severity: Medium
+  The "checked <= qty, returned <= checked" validation rules are written
+  twice with slightly different code shapes -- same business rule, two
+  implementations that could silently drift apart if one is changed without
+  the other.
+
+FINDING: Latent race condition via missing debounce
+  Location: supplier.js:177-182 (searchSupplierInput), also index.js:598,
+            historySearchInput/partsSearchInput in supplier.js
+  Severity: Medium
+  Each keystroke triggers fresh Firestore reads with no debounce/throttle
+  and no abort of in-flight previous calls. Fast typing fires overlapping
+  async calls whose results can resolve out of order, causing the rendered
+  list to flicker between intermediate and final filter states.
+
+FINDING: No memory leaks found
+  Severity: None (positive finding)
+  Since there are zero Firestore .onSnapshot() listeners anywhere in the
+  codebase, there's nothing to leak in that dimension. Chart.js instances
+  ARE properly destroyed before recreation (supplier.js:1062-1063) -- good
+  practice already followed.
+
+FINDING: Repeated querySelector/querySelectorAll calls inside handlers
+  Location: index.js:572, 577; supplier.js:628, 631, 775, 778
+  Severity: Low
+  document.querySelectorAll('.sortable-header') re-queries the DOM inside
+  every header's own click handler rather than caching the NodeList once.
+  Trivial cost at this scale (<=10 headers).
+
+FINDING: No blocking synchronous code found
+  Severity: None (positive finding)
+  No large synchronous loops, no blocking JSON parsing of huge payloads
+  found in the JS files reviewed.
+
+================================================================================
+5. FIRESTORE PERFORMANCE AUDIT -- HIGHEST PRIORITY
+================================================================================
+
+This is the most consequential section. EVERY SINGLE DATA OPERATION in this
+app re-downloads entire collections. There is no client-side cache, no
+pagination at the query level (Firestore .limit()/.startAfter() is never
+used), no .onSnapshot() realtime listener, and no localStorage/sessionStorage
+persistence layer despite firebase.firestore().enablePersistence() being
+trivially available in the Compat SDK and never called.
+
+CONCRETE READ-AMPLIFICATION FINDINGS:
+
+1. storage.js:20 seedFirestoreIfNeeded()
+   Runs db.collection('suppliers').get() unconditionally on EVERY PAGE LOAD,
+   all 3 pages.
+   Impact: 1 read x every visit, forever.
+
+2. index.js:605-606 initial load
+   loadFormDropdowns() calls getSuppliers() + getParts(); loadTableRecords()
+   calls getReceivingRecords() + getSuppliers() (again) + getInspectors().
+   Impact: Re-fetches getSuppliers() twice in the same page load with no
+   reuse.
+
+3. supplier.js:117-178 loadSuppliersList()
+   Calls getSuppliers() + getParts() + getReceivingRecords() -- the ENTIRE
+   parts collection and entire records collection are downloaded just to
+   compute a per-supplier count badge ("3 Parts", "12 Recs").
+   Impact: Full 3-collection download, triggered on EVERY KEYSTROKE in the
+   supplier search box (no debounce).
+
+4. supplier.js:185-212 selectSupplier()
+   Calls getSuppliers() again just to find one supplier by id (client-side
+   .find()) -- getSupplierById() already exists in storage.js and does a
+   direct single-doc .doc(id).get(), but isn't used here.
+   Impact: Downloads whole suppliers collection instead of 1 doc.
+
+5. supplier.js:486-501 loadHistoryTable()
+   Calls getReceivingRecords() (ENTIRE records collection, every supplier's
+   history, every page load of this tab) + getInspectors(), then filters
+   client-side to one supplier in JS.
+   Impact: If there are 10,000 records across all suppliers, viewing ONE
+   supplier's history downloads all 10,000.
+
+6. supplier.js:999-1007 renderCharts()
+   Same pattern -- downloads ALL records for ALL suppliers just to filter to
+   one supplier's chart data, re-run on every year/month dropdown change and
+   every theme toggle.
+   Impact: Full collection re-download per chart re-render.
+
+7. storage.js:166-183 updateSupplier()
+   Cascade update: where('supplierId','==',id).get() then loops calling
+   .update() ONE DOCUMENT AT A TIME (not batched).
+   Impact: N individual writes instead of 1 Firestore WriteBatch/
+   BulkWriter.
+
+8. storage.js:185-195 deleteSupplier()
+   Same N+1 pattern: fetches all parts for the supplier, then deletes them
+   one at a time in a loop.
+   Impact: N individual deletes instead of 1 batch.
+
+9. storage.js:324-349 addReceivingRecord()
+   Performs getSupplierById() + getInspectorById() as TWO EXTRA READS just
+   to denormalize supplierName/inspectorName into the record -- but the
+   calling code (index.js) ALREADY HAS the supplier and inspector name
+   available in the <select> text at the moment of submission.
+   Impact: 2 unnecessary reads per record created, easily avoidable.
+
+10. storage.js:356-380 updateReceivingRecord()
+    Same pattern -- 2 extra reads to re-fetch names already known by the
+    editing UI.
+    Impact: 2 unnecessary reads per record edit.
+
+11. No .limit() anywhere
+    getReceivingRecords(), getParts(), getSuppliers(), getComments(),
+    getInspectors() all fetch the FULL collection unconditionally.
+    Impact: Collection grows unboundedly with usage -- read cost is
+    O(all-time data volume) on every single page view, not O(visible page
+    size).
+
+ESTIMATED IMPACT:
+
+- Current behavior: A single visit to supplier.html and selecting one
+  supplier triggers roughly: 1 (suppliers) + 1 (parts) + 1 (records) [list]
+  + 1 (suppliers, redundant) [select] + 1 (records) + 1 (inspectors)
+  [history tab] = ~6 full-collection reads, where each "read" actually
+  bills Firestore PER-DOCUMENT, not per-query. If "records" has 5,000
+  documents, that single click bills ~10,000+ document reads (records
+  collection touched twice).
+
+- Typing 5 characters into the supplier search box re-triggers all of the
+  above 5 times with no debounce -> could turn a single search into
+  50,000+ billed document reads in a few seconds.
+
+PROJECTED SAVINGS FROM CACHING + SCOPED QUERIES:
+
+- Adding a simple in-memory cache for suppliers, inspectors, comments
+  (small, low-churn collections) loaded once per page session instead of
+  re-fetched on every function call -> ~70-90% reduction in reads for those
+  collections.
+
+- Replacing getReceivingRecords() (full collection) + client-side filter
+  with db.collection('records').where('supplierId','==',id).get() in
+  loadHistoryTable/renderCharts -> reads become O(that supplier's records)
+  instead of O(all records ever created) -- with 20 suppliers this is
+  roughly a 95% reduction in records-collection reads for that operation.
+
+- Debouncing search inputs (200-300ms) -> 5-10x fewer calls during typing.
+
+- Removing the 2 denormalization reads in addReceivingRecord/
+  updateReceivingRecord by passing already-known names from the DOM -> 2
+  reads saved per write operation, eliminates ~40% of the reads in the
+  hottest write path.
+
+- Removing/conditioning the seed-check read behind a one-time localStorage
+  flag -> 1 read saved per page load forever, small but compounds over the
+  app's lifetime traffic.
+
+- Loading speed: Each of these changes also directly cuts page-perceived
+  latency, since network round-trips to Firestore (not large data volume,
+  but round-trip count and document count) are the dominant cost on a
+  vanilla SDK with no persistence enabled.
+
+================================================================================
+6. LOADING PERFORMANCE
+================================================================================
+
+FINDING: All third-party scripts loaded synchronously, render-blocking
+  Severity: Medium
+  Bootstrap CSS, Bootstrap Icons CSS, Google Fonts @import, Bootstrap JS
+  bundle, Firebase compat (2 files), Chart.js (supplier.html only) -- none
+  use defer/async, and the Google Fonts @import inside style.css is a known
+  render-blocking anti-pattern (forces a second blocking request chain:
+  HTML->CSS->font CSS->font file).
+
+FINDING: @import for Google Fonts inside CSS instead of <link> in <head>
+  Location: style.css:3
+  Severity: Medium
+  Should be a <link rel="preconnect"> + <link> tag in HTML <head>, which
+  allows the browser to discover and fetch the font in parallel with other
+  resources instead of after the CSS file is parsed.
+
+FINDING: Chart.js loaded unconditionally even though only used in one tab
+  Location: supplier.html:12
+  Severity: Low
+  Loads the full Chart.js bundle from CDN even when the user never opens the
+  "Reports & Stats" tab.
+
+FINDING: No defer/async on project's own scripts
+  Severity: Low
+  storage.js, ui.js, app.js, page-controller script -- all plain
+  <script src> at the end of <body> (good placement already), could still
+  use defer for marginal benefit; low priority since already at bottom of
+  body.
+
+FINDING: No image assets in the app at all
+  Severity: None (N/A)
+  No <img> tags found anywhere -- nothing to optimize/lazy-load in this
+  dimension.
+
+FINDING: No bundler/minification
+  Severity: Low
+  All custom JS/CSS served unminified -- fine at current file sizes
+  (<=1200 lines), but worth a build step if the app grows.
+
+FINDING: Inconsistent CDN Subresource Integrity hashes
+  Severity: Low (security-adjacent)
+  integrity="sha384-..." is set on the two Bootstrap bundle tags but missing
+  on bootstrap-icons, chart.js, and both firebasejs script tags.
+
+================================================================================
+7. DATABASE STRUCTURE (Firestore Collections)
+================================================================================
+
+FINDING: Denormalization is intentional and handled correctly via cascade
+  updates
+  Severity: None (positive finding)
+  supplierName and detailName/inspectorName are denormalized into
+  parts/records by design (documented in README) and cascade-updated on
+  rename -- appropriate tradeoff for a read-heavy reporting app, BUT the
+  cascade-update mechanism itself is inefficient (see Firestore section,
+  items 7-8: N individual writes instead of WriteBatch).
+
+FINDING: No Firestore indexes file / rules file found in repo
+  Severity: Critical (Security)
+  No firestore.rules or firestore.indexes.json present anywhere in the
+  repository. Compound queries like where('supplierId','==',id) on
+  parts/records will likely auto-create needed single-field indexes, but
+  the COMPLETE ABSENCE OF ANY SECURITY RULES FILE is the most serious
+  finding in this entire audit -- see Security Review.
+
+FINDING: records collection has no supplierId+date compound index
+  consideration for future range queries
+  Severity: Low/Future
+  Not a current bug since the app always fetches the full collection and
+  filters client-side, but if/when pagination is added, a composite index
+  on (supplierId, date) will be required for an efficient ordered, scoped
+  query.
+
+FINDING: Collections are appropriately separated
+  Severity: None (positive finding)
+  suppliers, parts, inspectors, comments, records -- clean 1:N
+  relationships, no unnecessary nesting, no candidates for merging.
+
+================================================================================
+8. SECURITY REVIEW
+================================================================================
+
+FINDING: Firebase API key and full project config hardcoded in client-side
+  JS, committed to a public GitHub repo
+  Location: storage.js:6-13, also README.md:71-78
+  Severity: Critical (context-dependent)
+  This is EXPECTED/NORMAL for Firebase Web SDK (the API key is not a secret
+  in the traditional sense -- it identifies the project, not authorizes
+  access) PROVIDED Firestore Security Rules properly restrict access. The
+  real critical issue is the next finding.
+
+FINDING: No Firestore Security Rules found anywhere in the repository
+  Severity: Critical
+  There is no firestore.rules file, and nothing in the codebase suggests any
+  rules have been deployed restricting read/write access. If this Firestore
+  project is using default rules (deny-all after the default test-mode
+  30-day window expires) the app will simply break; if it was ever set to
+  test-mode permissive rules (allow read, write: if true) and never
+  revisited, ANYONE ON THE INTERNET who finds the API key in this public
+  GitHub repo can read, write, or delete every document in every collection
+  -- including deleting all supplier/parts/records data. VERIFY IMMEDIATELY
+  in the Firebase console.
+
+FINDING: No authentication of any kind
+  Severity: Critical
+  There is no Firebase Auth integration anywhere in the codebase -- no
+  login, no user identity, no firebase.auth(). Combined with the rules gap
+  above, this means (depending on current rules config) the entire QC
+  database may be world-writable.
+
+FINDING: innerHTML used extensively with unescaped data interpolation --
+  XSS risk
+  Severity: High
+  Dozens of locations build HTML via template literals with ${...}
+  interpolation of user-controllable strings directly into innerHTML:
+    - index.js:555-565 -- rec.fn, rec.supplierName, rec.detailName,
+      rec.comment (all user-entered form text) injected raw into table rows
+    - index.js:72 -- comment preset text injected into dropdown <li> raw
+    - supplier.js:567-584, 709-726, 152-165 -- same pattern for history
+      rows, parts rows, supplier list items
+    - settings.js:80-92, 189-201 -- inspector names, comment preset text
+    - ui.js:54, 59, 73 -- toast/confirm modal message/title params injected
+      raw
+
+  CONCRETELY EXPLOITABLE: if a user types <img src=x onerror=alert(1)> into
+  the "Comments" field on the registration form, or names a Supplier/
+  Inspector/Part with an HTML/script payload, that payload will execute in
+  the browser of EVERY OTHER USER who later views that record in the table,
+  history log, or supplier list. This is a textbook stored-XSS
+  vulnerability. None of the user-entered fields (F/N, comment, supplier
+  name, part name/ID, inspector name) are escaped before being placed into
+  the DOM via innerHTML.
+
+FINDING: Client-side validation only, no equivalent server-side enforcement
+  Severity: High
+  All quantity/range validation (checked <= qty, returned <= checked,
+  required fields) lives only in JS (index.js, supplier.js). Without
+  Firestore Security Rules enforcing the same invariants server-side,
+  anyone who can reach the Firestore REST/SDK API directly (trivial, given
+  the exposed config) can write arbitrary invalid data bypassing all client
+  checks.
+
+FINDING: No CSV upload validation visible from reviewed files
+  Severity: Medium (flag for follow-up)
+  supplier.html references a CSV importer per the README but the relevant
+  JS for that importer was not present in the files read in this pass --
+  worth a dedicated review of the importer code path for injection risks.
+
+FINDING: localStorage usage is benign
+  Severity: None (positive finding)
+  Only used for "theme" (light/dark) in ui.js:112-119 -- no sensitive data,
+  no security concern.
+
+*** This section is the most urgent in the entire report. The combination
+of (a) public repo with Firebase config, (b) no visible security rules,
+(c) no authentication, and (d) widespread unescaped innerHTML means this
+should not be treated as "nice to fix eventually" -- it is a live
+data-integrity and XSS exposure that should be addressed before continued
+production use, independent of the Firestore cost-optimization work. ***
+
+================================================================================
+9. CODE QUALITY
+================================================================================
+
+FINDING: Magic numbers without named constants
+  Severity: Low
+  30 (page size, repeated 3x: index.js:45, supplier.js:91,99), 4000 (toast
+  delay, ui.js:27), 100 (chart re-render timeout, supplier.js:1151),
+  250px/220px pixel widths inline in HTML. Should be named constants
+  (PAGE_SIZE = 30, TOAST_DELAY_MS = 4000).
+
+FINDING: Hardcoded display strings repeated identically across files
+  Severity: Low
+  'Unknown Supplier' (storage.js, 3x), 'Unknown Inspector' (storage.js +
+  index.js + supplier.js, 4x total), 'OK' as default comment fallback --
+  fine for a small app, but a single constants module would prevent
+  typos/drift.
+
+FINDING: Files over 500 lines
+  Severity: Medium
+  supplier.js (1159 lines) significantly exceeds the 500-line guideline;
+  index.js (607) and storage.js (382) are borderline/fine.
+
+FINDING: Inconsistent quote/comment style
+  Severity: None (negligible)
+  Codebase is internally consistent (single quotes, /** ... */ block
+  headers per file) -- no real issue.
+
+FINDING: Clear function naming throughout
+  Severity: None (positive finding)
+  loadSuppliersList, renderActiveTab, updateActiveSupplierHighlight etc. are
+  descriptive and self-documenting -- no renaming needed.
+
+FINDING: Comments only where logic is non-obvious
+  Severity: None (positive finding)
+  Comments like "// Reset Part fields", "// Update local highlight in
+  sidebar list without querying Firestore" explain WHY, not WHAT -- this is
+  the right comment style and should be preserved in any refactor.
+
+================================================================================
+10. FINAL REPORT -- PRIORITIZED ISSUE LIST
+================================================================================
+
+--- CRITICAL ---
+1. No Firestore Security Rules found -- verify immediately in Firebase
+   console; risk of fully open read/write database. (File: N/A -- missing
+   artifact)
+2. No authentication layer -- combined with #1, anyone with the API key
+   (publicly committed) may have full DB access. (js/storage.js)
+3. Stored XSS via unescaped innerHTML in index.js (lines 72, 224-225,
+   554-565), supplier.js (lines 152-165, 567-584, 709-726), settings.js
+   (lines 80-92, 189-201), ui.js (lines 54, 59, 73) -- user-entered text
+   (comments, supplier/part/inspector names) rendered unescaped; any user
+   can inject script that executes for all future viewers.
+4. Table colspan/column-count mismatch in supplier.js:221-222
+   (updateDetailCardState) -- placeholder row uses colspan="8" for a
+   9-column history table, causing layout misalignment in the empty state.
+
+--- HIGH PRIORITY ---
+5. Full-collection Firestore reads on nearly every interaction, no caching,
+   no scoped .where() queries where they're trivially possible
+   (supplier.js: loadSuppliersList, selectSupplier, loadHistoryTable,
+   renderCharts) -- see Firestore section. Estimated 70-95% read reduction
+   available.
+6. No debounce on search inputs (supplier.js: searchSupplierInput,
+   historySearchInput, partsSearchInput; index.js: tableSearchInput) --
+   each keystroke re-triggers full-collection reads.
+7. 2 unnecessary reads per write in addReceivingRecord/
+   updateReceivingRecord (storage.js:324-349, 356-380) re-fetching
+   supplier/inspector names already known to the caller.
+8. Unconditional seed-check read on every page load, forever
+   (storage.js:140).
+9. Triplicated sort-comparator logic (index.js:503-515,
+   supplier.js:513-525, 665-677) -- should be one shared utility; risk of
+   logic drift.
+10. Duplicated validation rules for qty/checked/returned between index.js
+    and supplier.js's edit-record modal -- same business rule expressed
+    twice, can silently diverge.
+11. Main registry table has no pagination, hard-caps at latest 30 records
+    (index.js:478) -- functional gap, older records are completely
+    inaccessible from that page.
+12. Render-blocking Google Fonts @import inside style.css:3 instead of
+    <link rel="preconnect"> in HTML head.
+
+--- MEDIUM PRIORITY ---
+13. N individual writes instead of batched writes in cascade update/delete
+    (storage.js: updateSupplier, deleteSupplier).
+14. supplier.js is a 1159-line monolith mixing supplier CRUD, parts CRUD,
+    transfer, record editing, pagination, and chart logic -- candidate for
+    splitting.
+15. Two independent custom-dropdown ("searchable select") implementations
+    with overlapping logic (index.js: comment presets vs. detail-ID
+    search).
+16. Inconsistent empty-state markup between HTML-based icon+text blocks and
+    JS-built <tr><td> strings (settings.js vs. index.html/supplier.html).
+17. !important-heavy form-grid CSS fighting Bootstrap's own grid system
+    instead of using independent custom classes (style.css:346-379).
+18. Missing Subresource Integrity hashes on Bootstrap Icons, Chart.js, and
+    Firebase CDN script tags (present only on Bootstrap CSS/JS).
+19. Repeated {searchQuery, sortColumn, sortOrder, currentPage, pageSize}
+    state shape defined 3 separate times -- candidate for a factory
+    function.
+
+--- LOW PRIORITY ---
+20. Dead/misleading app.js (says "LocalStorage Driver Active" -- stale
+    from a prior architecture).
+21. Magic numbers (30, 4000, 100) not extracted to named constants.
+22. Hardcoded colors in CSS not reusing existing --accent-color/Bootstrap
+    tokens (style.css:269 etc.).
+23. Inline style="..." attributes scattered across 3 HTML files instead of
+    utility classes.
+24. aria-label missing alongside title on icon-only buttons (accessibility
+    nicety).
+25. Repeated querySelectorAll calls inside event handlers instead of
+    cached references (negligible cost at current scale).
+26. ui.js's confirm-button-cloning pattern could be simplified with
+    { once: true } listener option.
+
+================================================================================
+11. REFACTORING PLAN (ordered by impact, safe/non-breaking)
+================================================================================
+All steps preserve existing functionality, business logic, and features --
+these are internal implementation changes only.
+
+STEP 1 -- Lock down Firestore Security Rules + verify auth posture
+  (Critical, do first, near-zero engineering effort)
+  Confirm current rules in Firebase console; deploy rules requiring
+  authenticated access (or scoped public rules if intentionally public) and
+  add basic server-side field validation mirroring the client checks.
+  Impact: eliminates the single biggest risk in the app -- unauthorized
+  data loss/tampering.
+
+STEP 2 -- Escape all user-controlled innerHTML insertions
+  (Critical, ~1-2 hours)
+  Introduce one small escapeHtml() helper in ui.js and apply it everywhere
+  user-entered strings (comment, fn, supplier/part/inspector names) are
+  interpolated into template literals.
+  Impact: closes the stored-XSS vector entirely; zero functional/visual
+  change for legitimate data.
+
+STEP 3 -- Fix the colspan="8" bug in supplier.js:221-222 to colspan="9".
+  (Critical, 1 line, 1 minute.)
+
+STEP 4 -- Introduce a thin in-memory cache layer in storage.js
+  for suppliers, inspectors, comments (small, low-churn collections),
+  invalidated on writes to those collections.
+  Impact: ~70-90% read reduction for those 3 collections across all 3
+  pages; faster page loads (fewer round trips); zero behavior change.
+
+STEP 5 -- Replace full-collection-then-filter with scoped .where() queries
+  in loadHistoryTable, renderCharts (supplier.js) -- query records by
+  supplierId directly instead of downloading everything and filtering in
+  JS.
+  Impact: read cost becomes proportional to one supplier's data instead of
+  the whole records collection; biggest single cost lever in the app,
+  scales with data growth.
+
+STEP 6 -- Remove the 2 redundant reads in addReceivingRecord/
+  updateReceivingRecord by passing the already-known supplier/inspector
+  display name from the calling form code instead of re-fetching.
+  Impact: cuts the hottest write-path's read count by ~40%; faster
+  perceived submit time.
+
+STEP 7 -- Debounce all search inputs (200-300ms) across index.js and
+  supplier.js.
+  Impact: 5-10x fewer reads during typing; smoother UI with no flicker
+  from out-of-order async resolution.
+
+STEP 8 -- Gate seedFirestoreIfNeeded() behind a one-time localStorage flag
+  after first successful confirmation that the DB is non-empty.
+  Impact: removes 1 unconditional read per page load, forever, with no
+  behavior change for end users.
+
+STEP 9 -- Batch the cascade update/delete writes in updateSupplier/
+  deleteSupplier using db.batch().
+  Impact: same number of underlying writes (Firestore still bills
+  per-document-written), but turns N sequential network round-trips into
+  1, meaningfully speeding up supplier rename/delete operations especially
+  for suppliers with many parts.
+
+STEP 10 -- Extract the triplicated sort comparator and table-state shape
+  into shared helpers in ui.js (UI.sortRecords(arr, column, order),
+  UI.createTableState(defaults)).
+  Impact: maintainability only, zero runtime/UX change; reduces future
+  risk of the three copies drifting apart.
+
+STEP 11 -- Move Google Fonts loading from CSS @import to a
+  <link rel="preconnect"> + <link> pair in each HTML <head>.
+  Impact: removes one render-blocking request chain hop; modest but
+  measurable first-paint improvement.
+
+STEP 12 -- Add pagination to the main Register page's records table
+  (reuse the existing renderPagination helper, relocated to ui.js per
+  Step 10) instead of hard-capping at 30.
+  Impact: restores access to historical records beyond the most recent 30
+  -- closes a real functional gap, not just performance.
+
+STEP 13 (optional, larger effort) -- Split supplier.js into cohesive
+  modules (supplier-directory.js, parts.js, records-edit.js, charts.js)
+  sharing the same DOMContentLoaded init pattern.
+  Impact: maintainability only; no behavior change; recommended only
+  after Steps 1-12 are stable, since it's the highest-effort, lowest-
+  urgency item.
+
+================================================================================
+END OF REPORT
+================================================================================
+No code has been modified as part of this audit. Recommended starting
+point: Steps 1-3 (security fixes) since those carry real risk, followed by
+Steps 4-8 (Firestore cost/speed) per the stated priority that Firestore
+read optimization and loading performance are the highest priority areas.
+================================================================================

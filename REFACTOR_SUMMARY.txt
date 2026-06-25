@@ -1,0 +1,373 @@
+================================================================================
+PERFORMANCE & ARCHITECTURE REFACTOR - SUMMARY
+Parts Receiving Management System
+================================================================================
+Date: 2026-06-25
+Scope: Architecture/performance refactor only. No UI redesign, no business
+logic changes, no feature removal, no Firestore schema changes. Verified
+against the live Firebase project with Playwright (zero console/page errors
+across all 3 pages; see verification section below).
+
+================================================================================
+BEFORE vs AFTER ARCHITECTURE
+================================================================================
+
+BEFORE:
+  UI (index.js / supplier.js / settings.js)
+    -> calls db.collection(...) directly, scattered across every page
+    -> no cache, every function call re-reads Firestore
+    -> client-side filter/sort/slice on full collections
+    -> sequential awaits for independent data
+    -> N+1 reads (re-fetching supplier/inspector names already known)
+    -> N+1 writes (cascade update/delete looped one doc at a time)
+
+AFTER:
+  UI (index.js / settings.js / supplier-*.js)
+    -> Repository layer (SupplierRepository, PartRepository,
+       InspectorRepository, CommentRepository, ReceivingRepository)
+       -> Cache layer (Cache.getOrLoad / invalidate)
+         -> Firestore (scoped where()/orderBy()/limit() queries,
+            batched writes, offline persistence enabled)
+
+  Pages NEVER call db.collection(...) directly anymore - the Repository
+  layer (js/repositories.js) is the only file that touches `db`.
+
+================================================================================
+NEW FILES INTRODUCED
+================================================================================
+  js/cache.js              - Generic in-memory cache with getOrLoad/invalidate
+  js/utils.js              - debounce, sortRecords, escapeHtml, validateQuantities,
+                              createTableState, bindSortableHeaders, renderPagination,
+                              renderRows (DocumentFragment batching)
+  js/repositories.js       - SupplierRepository, PartRepository, InspectorRepository,
+                              CommentRepository, ReceivingRepository (the only file
+                              that calls db.collection(...))
+  js/supplier-state.js     - Shared SupplierPage namespace (DOM refs + state) used
+                              by all split supplier-*.js modules
+  js/supplier-list.js      - Supplier directory list, search, supplier CRUD
+  js/supplier-history.js   - History tab + Edit Delivery Record modal
+  js/supplier-parts.js     - Parts tab + part CRUD + Transfer modal
+  js/supplier-charts.js    - Reports & Stats tab (Chart.js rendering)
+  js/supplier-events.js    - Tab-switching wiring + page init (new entry point)
+
+FILES REMOVED:
+  js/supplier.js (1159 lines) - fully replaced by the 6 files above plus
+                                  supplier-state.js (7 focused modules total)
+
+FILES MODIFIED:
+  js/storage.js   - now only Firebase init + offline persistence + gated seeding
+                    (all CRUD logic moved into repositories.js)
+  js/ui.js        - added UI.createSearchableDropdown (reusable component)
+  js/index.js     - now uses repositories, shared utils, debounced search
+  js/settings.js  - now uses repositories, parallel loads
+  index.html, supplier.html, settings.html - updated <script> includes only
+
+================================================================================
+WHAT CHANGED, MAPPED TO THE 20 REQUIREMENTS
+================================================================================
+
+1. Repository Layer
+   - SupplierRepository, PartRepository, InspectorRepository, CommentRepository,
+     ReceivingRepository in js/repositories.js. All Firestore access, CRUD,
+     cache invalidation, and batched writes live here. No page calls
+     db.collection(...) directly anymore.
+
+2. Cache Layer
+   - js/cache.js: Cache.getOrLoad(key, loader) returns the cached value/in-flight
+     promise if present, otherwise loads once and caches the result.
+     Concurrent calls (e.g. rapid search keystrokes before debounce fires)
+     share the same in-flight Firestore request instead of issuing duplicates.
+   - suppliers, inspectors, comments: cached whole (small, low-churn).
+   - parts: cached per-supplier (parts:bySupplier:<id>) plus a parts:all key
+     used only by the supplier-directory badge counts.
+   - records: NOT cached whole (unbounded growth) - cached per query shape
+     instead (records:latest30, records:bySupplier:<id>, records:distinctYears).
+
+3. Firestore Offline Persistence
+   - js/storage.js calls db.enablePersistence({ synchronizeTabs: true }) right
+     after firebase.initializeApp(), with .catch() handling for
+     'failed-precondition' (multiple tabs) and 'unimplemented' (unsupported
+     browser) so it degrades gracefully instead of throwing.
+
+4. Repeated Reads Removed
+   - getSuppliers()/getInspectors()/getComments() are now cached - called from
+     multiple places across a session but Firestore is hit at most once per
+     collection until a write invalidates that cache key.
+   - Verified via Playwright network capture: typing 4 characters into the
+     supplier search box produced 0 additional Firestore requests (previously:
+     4 full re-downloads of suppliers+parts+records).
+
+5. N+1 Reads Removed
+   - storage.js's old loop-based "fetch supplier inside a loop" pattern is
+     gone; SupplierRepository.getById() reads from the already-cached
+     getAll() list instead of issuing a new doc read per call.
+   - History tab and Parts tab dropdowns load inspectors/parts via
+     Promise.all instead of sequential awaits.
+
+6. N+1 Writes Removed
+   - SupplierRepository.rename() and .remove() now use db.batch() to apply
+     the cascade update/delete to all affected parts/records documents in a
+     single network round trip, instead of looping .update()/.delete() one
+     document at a time.
+
+7. Firestore Query Optimization
+   - ReceivingRepository.getBySupplier(id) uses
+     .where('supplierId','==',id) instead of downloading the entire
+     `records` collection and filtering in JS. Used by both the History tab
+     and the Charts tab (shared cache key - switching tabs doesn't re-read).
+   - ReceivingRepository.getLatest(30) uses .orderBy('date','desc').limit(30)
+     for the Register page log instead of "download everything, sort, slice".
+
+8. Pagination
+   - The Register page log now requests exactly the displayed page size from
+     Firestore (orderBy + limit) rather than downloading the whole
+     collection and slicing client-side.
+   - Supplier History/Parts tabs keep their existing client-side pager UI
+     (Utils.renderPagination), now backed by the scoped per-supplier query
+     instead of the full collection.
+
+9. Parallel Loading
+   - index.js: loadFormDropdowns() loads suppliers+parts+inspectors+comments
+     via Promise.all; initial page load runs loadFormDropdowns() and
+     loadTableRecords() in parallel.
+   - settings.js: inspectors + comments tables load in parallel.
+   - supplier-list.js: suppliers + parts load in parallel; per-supplier
+     record counts for directory badges load in parallel via Promise.all.
+   - supplier-history.js: inspectors + parts (for the Edit modal selects)
+     load in parallel.
+   - supplier-events.js: directory list + chart-year-selector load in
+     parallel on page init.
+
+10. Debounced Searches
+    - All 4 search inputs (Register table search, Supplier directory search,
+      History search, Parts search) now go through Utils.debounce(fn, 250).
+      Verified via Playwright: typing produced 0 extra Firestore reads until
+      input settled.
+
+11. Duplicate Sorting Removed
+    - Utils.sortRecords() and Utils.bindSortableHeaders() replace the three
+      hand-written copies of the same comparator/click-handler logic that
+      previously existed in index.js and (twice) in supplier.js.
+
+12. Duplicate Validation Removed
+    - Utils.validateQuantities(qty, checked, returned) is the single source
+      of truth for the "checked <= qty, returned <= checked" business rule,
+      used by both the Register form and the Edit Delivery Record modal.
+
+13. Reusable Dropdown Component
+    - UI.createSearchableDropdown() in js/ui.js implements the "type to
+      filter, click to select, hide on outside click" behavior once. Used
+      by the Detail ID search box on the Register page. (The Comment Presets
+      control intentionally stays on Bootstrap's native dropdown show()/hide()
+      API and <ul><li> markup, since it is a different widget shape backed by
+      Bootstrap's own dropdown component - forcing it through the generic
+      component would have required changing its DOM structure, which the
+      "do not change UI" constraint ruled out.)
+
+14. supplier.js Modularized
+    - Split into supplier-state.js, supplier-list.js, supplier-history.js,
+      supplier-parts.js, supplier-charts.js, supplier-events.js - each with a
+      single responsibility, communicating through the shared `SupplierPage`
+      state object rather than one 1159-line closure.
+
+15. Batch DOM Updates
+    - Utils.renderRows() builds all table rows into a DocumentFragment before
+      a single innerHTML clear + one appendChild, replacing the previous
+      per-row appendChild-in-a-loop pattern across all 5 tables in the app
+      (Register log, History, Parts, Inspectors, Comments).
+    - Utils.renderPagination() does the same for pagination controls.
+
+16-17. UI and Business Logic Preserved
+    - No Bootstrap classes, layout, spacing, colors, modals, or card
+      structure changed. No HTML changed except <script> tag includes.
+      No validation behavior, workflow, Firestore collection names, or
+      document schema changed. Verified by running the actual app end-to-end
+      (see Verification section).
+
+18-19. Incremental & Safe
+    - Built bottom-up (cache -> utils -> repositories -> page controllers)
+      so each layer could be reasoned about independently before the next
+      depended on it. The old supplier.js was only deleted after all 6
+      replacement modules were written and the dependency chain verified.
+
+================================================================================
+VERIFICATION PERFORMED
+================================================================================
+- `node --check` on all 14 JS files: all pass (no syntax errors).
+- Playwright/Chromium driven against the LIVE Firebase project (not a mock):
+    - index.html: 0 console errors, 0 page errors. Supplier/inspector
+      dropdowns populated (18/5 options), records table rendered, detail-ID
+      searchable dropdown opens on focus, debounced table search works.
+    - supplier.html: 0 console errors, 0 page errors. Directory loaded 17
+      real suppliers, selecting one populated History (2 rows for that
+      supplier) and Parts (30 rows, correctly paginated) tabs, Charts tab
+      rendered both canvases.
+    - settings.html: 0 console errors, 0 page errors. Inspectors (4) and
+      Comments (19) tables loaded.
+- Firestore network-request counting via Playwright (`firestore.googleapis.com`
+  request interception) confirmed the caching/debounce behavior live:
+    - Typing 4 characters into the supplier search box: 0 additional
+      Firestore requests (previously this would have re-downloaded
+      suppliers+parts+records on every keystroke).
+    - Switching from History tab -> Charts tab for the same supplier: 0
+      additional Firestore requests (both read the same
+      `records:bySupplier:<id>` cache entry).
+    - Switching back to History tab again: 0 additional requests (still
+      cached).
+    - Switching to Parts tab (a cache key not yet populated for this
+      supplier): 2 requests, as expected for a genuinely new query.
+
+================================================================================
+ESTIMATED FIRESTORE READ REDUCTION
+================================================================================
+- Suppliers/Inspectors/Comments collections: each was previously re-read on
+  effectively every function call that needed them (multiple times per page
+  load, and again on every search keystroke with no debounce). Now read at
+  most once per collection per session until a write invalidates the cache.
+  Estimated reduction: 70-90% of reads against these 3 collections.
+
+- Records collection: previously the ENTIRE collection was downloaded for
+  every Register-page load, every Suppliers-directory render, every History-
+  tab load, and every Charts-tab render/re-render - all unconditionally, and
+  on every search keystroke with no debounce. Now:
+    - Register page log: capped at the displayed page size via
+      orderBy+limit() instead of the whole collection.
+    - Supplier History/Charts tabs: scoped to the active supplier via
+      where('supplierId','==',id), and shared between both tabs via the
+      cache, so viewing both tabs for one supplier now costs the same single
+      read as viewing just one used to (previously: 2 full-collection
+      downloads for that same interaction).
+  Estimated reduction: 90%+ for any project with more than a handful of
+  suppliers, scaling further as the records collection grows over time
+  (reads are now O(supplier's data) instead of O(all-time database size)).
+
+- Per-write denormalization reads: addReceivingRecord/updateReceivingRecord
+  no longer re-fetch the supplier/inspector documents to get their display
+  names - the already-selected <option> text is passed straight through.
+  2 reads eliminated per record created or edited (100% of the previously
+  unconditional reads in that path).
+
+- Seed-check read: now runs at most once ever per browser (gated behind a
+  localStorage flag), instead of once per page load forever.
+
+- Search debounce: keystroke-driven reads collapse from "1 per character
+  typed" to "1 per ~250ms pause in typing" - typically a 5-10x reduction
+  during active searching.
+
+================================================================================
+ESTIMATED FIRESTORE WRITE REDUCTION
+================================================================================
+- Supplier rename: previously N sequential .update() calls (1 per affected
+  part + 1 per affected record) plus the supplier doc itself, each its own
+  network round trip. Now 1 db.batch().commit() - same number of documents
+  written (Firestore still bills per document touched), but 1 round trip
+  instead of N, meaningfully reducing wall-clock latency for suppliers with
+  many parts/records.
+- Supplier delete: same change - batched delete of the supplier + all its
+  parts in 1 commit instead of N sequential deletes.
+- No change to the number of documents billed for these operations (that
+  number is intrinsic to the cascade business rule, which was explicitly
+  preserved) - the improvement here is round-trip count and latency, not
+  write count.
+
+================================================================================
+ESTIMATED LOADING SPEED IMPROVEMENT
+================================================================================
+- First page load after the first visit: Firestore offline persistence
+  means previously-fetched documents are served from the local IndexedDB
+  cache before/while the network request completes, so repeat visits to any
+  page render meaningfully faster, especially on slow or flaky connections.
+- Supplier page navigation: switching between History and Charts tabs for
+  the same supplier now requires 0 additional network round trips (verified
+  above) instead of re-fetching the entire records collection a second time
+  - this is the single biggest perceived-speed improvement in the app, since
+  it was previously the most expensive repeated operation.
+- Search-as-you-type: previously every keystroke could trigger a new round
+  of full-collection downloads with no guarantee they'd resolve in order
+  (a latent race condition); now there are zero network requests until
+  typing pauses, so the UI no longer competes with in-flight stale requests.
+- DOM rendering: batching row construction into a DocumentFragment before a
+  single insertion reduces layout thrashing on tables with many rows (most
+  noticeable on the 30-row Parts/History/Register tables).
+
+================================================================================
+MAINTAINABILITY IMPROVEMENT
+================================================================================
+- supplier.js (1159 lines, every concern mixed together) is now 6 files
+  averaging ~150-250 lines each, each with one clear responsibility.
+- Sorting, validation, pagination rendering, and row-batch rendering each
+  exist in exactly one place (js/utils.js) instead of 2-3 near-duplicate
+  copies scattered across index.js and supplier.js.
+- All Firestore access is now isolated to repositories.js - a future schema
+  change, query optimization, or migration to the modular Firestore SDK only
+  touches one file instead of being scattered across 3 page controllers.
+- Cache invalidation is explicit and colocated with each write method in the
+  repository that performs it, making it easy to audit "what gets stale when
+  X changes."
+
+================================================================================
+REMAINING IMPROVEMENT OPPORTUNITIES (not done in this pass - out of scope)
+================================================================================
+- Security: no Firestore Security Rules file was found in the repository,
+  and innerHTML is still used with unescaped-by-default string interpolation
+  in a few remaining spots inherited from the original code (this refactor
+  added Utils.escapeHtml and applied it to all newly-touched render paths in
+  index.js/settings.js/supplier-*.js, but a dedicated security pass was out
+  of scope for this performance-focused refactor).
+- The supplier-directory badge counts (`Parts`/`Recs` per supplier) still
+  issue one where()-scoped records query per visible supplier in parallel
+  to compute the "Recs" count. For a very large number of suppliers (50+)
+  this could be replaced with a small denormalized `recordCount` /
+  `partCount` field maintained incrementally on the supplier document
+  (updated alongside existing writes) to avoid even those scoped queries.
+- Firestore's Compat SDK has no field projection, so getDistinctYears() for
+  the chart year selector still reads every record's full document once per
+  session (cached) - migrating to the modular Firestore SDK would not change
+  this either, since Firestore has no server-side DISTINCT/groupBy; a
+  denormalized `years` summary document would be the next step if this
+  becomes a measurable cost driver.
+- Pagination on the History/Parts tabs is still client-side slicing of a
+  per-supplier query result rather than true Firestore cursor pagination
+  (startAfter/limit chained across pages). This was kept as-is because a
+  typical single supplier's record/part count is small enough that the
+  scoped where() query already returns a small result set - true cursor
+  pagination would add complexity without a measurable benefit unless
+  individual suppliers grow into the thousands of records.
+
+================================================================================
+FIRESTORE INDEXES TO CREATE FOR OPTIMAL QUERY PERFORMANCE
+================================================================================
+The following queries are now used by the app. Firestore auto-creates
+single-field indexes, so most of these work out of the box; only composite
+indexes need to be created manually via the Firebase console or
+firestore.indexes.json:
+
+1. records.where('supplierId','==',X)
+   - Single-field index on `supplierId` - auto-created by Firestore, no
+     action needed.
+
+2. records.orderBy('date','desc').limit(30)
+   - Single-field index on `date` - auto-created by Firestore, no action
+     needed.
+
+3. parts.where('supplierId','==',X)
+   - Single-field index on `supplierId` - auto-created by Firestore, no
+     action needed.
+
+4. NOT currently used, but recommended if per-supplier history/parts tabs
+   are later changed to sort server-side instead of client-side (e.g. if
+   the dataset grows large enough to need true cursor pagination instead of
+   "fetch all of this supplier's records, then paginate in memory"):
+   a composite index on records: (supplierId ASC, date DESC) would let
+   .where('supplierId','==',X).orderBy('date','desc').limit(30) run
+   server-side. Not required today since the History tab already narrows to
+   one supplier first and sorts the (typically small) result client-side.
+
+No other composite indexes are required for the queries introduced by this
+refactor. If Firestore logs an index-required error in the browser console
+for any of the above (rare, since these are single-field), the error message
+itself contains a direct link to auto-create the missing index.
+
+================================================================================
+END OF SUMMARY
+================================================================================
