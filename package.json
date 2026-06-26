@@ -1,0 +1,16 @@
+{
+  "name": "postavshiki",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Parts Receiving Management System - static frontend + Vercel API backed by Turso (libSQL)",
+  "scripts": {
+    "migrate:firestore-to-turso": "node scripts/migrate-firestore-to-turso.js"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.14.0",
+    "firebase-admin": "^12.6.0"
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.5"
+  }
+}

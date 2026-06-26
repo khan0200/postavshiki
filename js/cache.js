@@ -1,5 +1,6 @@
 /**
- * cache.js - Generic in-memory cache layer sitting between Repositories and Firestore.
+ * cache.js - Generic in-memory cache layer sitting between Repositories and the
+ * backend API (Vercel /api/* functions backed by Turso).
  * Collections are cached whole (suppliers/inspectors/comments are small + low-churn).
  * Repositories are responsible for invalidating the right keys after writes.
  * Hit/miss events are reported to PerfStats (js/perf-stats.js) for observability only -
@@ -37,7 +38,7 @@ window.Cache = (function () {
     /**
      * Returns cached value if present, otherwise awaits loader(), caches it, and returns it.
      * Concurrent calls while a load is in-flight reuse the same in-flight promise instead of
-     * issuing duplicate Firestore reads (prevents the keystroke-search read-storm).
+     * issuing duplicate API requests (prevents the keystroke-search read-storm).
      */
     async getOrLoad(key, loader) {
       if (store.has(key)) {

@@ -1,5 +1,5 @@
 /**
- * perf-stats.js - Lightweight instrumentation for cache/Firestore activity.
+ * perf-stats.js - Lightweight instrumentation for cache/backend API activity.
  * Pure observability: never affects control flow or return values of the
  * code that calls it. Inspect live via `PerfStats.summary()` in DevTools.
  */
@@ -8,9 +8,9 @@ window.PerfStats = (function () {
   const counters = {
     cacheHits: 0,
     cacheMisses: 0,
-    firestoreReads: 0,   // number of repository-level read calls (collection.get() or doc.get())
-    firestoreWrites: 0,  // number of repository-level write calls (add/set/update/delete, batch.commit() counts as 1)
-    queryDurations: []   // { label, ms } for each Firestore read, most recent last
+    apiReads: 0,   // number of repository-level read calls (GET requests to /api/*)
+    apiWrites: 0,  // number of repository-level write calls (POST/PUT/DELETE to /api/*)
+    queryDurations: []   // { label, ms } for each read, most recent last
   };
 
   const MAX_DURATION_SAMPLES = 200;
@@ -27,22 +27,22 @@ window.PerfStats = (function () {
     },
 
     recordRead(label, ms) {
-      counters.firestoreReads++;
+      counters.apiReads++;
       counters.queryDurations.push({ label, ms });
       if (counters.queryDurations.length > MAX_DURATION_SAMPLES) {
         counters.queryDurations.shift();
       }
-      console.debug(`[PerfStats] Firestore READ  ${label} (${ms.toFixed(1)}ms)`);
+      console.debug(`[PerfStats] API READ  ${label} (${ms.toFixed(1)}ms)`);
     },
 
     recordWrite(label, ms) {
-      counters.firestoreWrites++;
-      console.debug(`[PerfStats] Firestore WRITE ${label} (${ms.toFixed(1)}ms)`);
+      counters.apiWrites++;
+      console.debug(`[PerfStats] API WRITE ${label} (${ms.toFixed(1)}ms)`);
     },
 
     /**
-     * Wraps an async Firestore read call, timing it and recording the result.
-     * Usage: PerfStats.timeRead('suppliers:getAll', () => db.collection('suppliers').get())
+     * Wraps an async read call, timing it and recording the result.
+     * Usage: PerfStats.timeRead('suppliers.getAll', () => apiRequest('GET', '/api/suppliers'))
      */
     async timeRead(label, fn) {
       const start = performance.now();
@@ -52,7 +52,7 @@ window.PerfStats = (function () {
     },
 
     /**
-     * Wraps an async Firestore write call (add/set/update/delete/batch.commit), timing it.
+     * Wraps an async write call (POST/PUT/DELETE), timing it.
      */
     async timeWrite(label, fn) {
       const start = performance.now();
@@ -75,8 +75,8 @@ window.PerfStats = (function () {
         cacheHits: counters.cacheHits,
         cacheMisses: counters.cacheMisses,
         cacheHitRate: hitRate,
-        firestoreReads: counters.firestoreReads,
-        firestoreWrites: counters.firestoreWrites,
+        apiReads: counters.apiReads,
+        apiWrites: counters.apiWrites,
         avgReadDurationMs: avgMs,
         recentQueries: counters.queryDurations.slice(-10)
       };
@@ -85,8 +85,8 @@ window.PerfStats = (function () {
     reset() {
       counters.cacheHits = 0;
       counters.cacheMisses = 0;
-      counters.firestoreReads = 0;
-      counters.firestoreWrites = 0;
+      counters.apiReads = 0;
+      counters.apiWrites = 0;
       counters.queryDurations = [];
     }
   };

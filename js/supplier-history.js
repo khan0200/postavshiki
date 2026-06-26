@@ -254,7 +254,7 @@ window.SupplierHistory = (function () {
     const reader = new FileReader();
     reader.onload = async function (e) {
       const text = e.target.result;
-      
+
       P.importProgressModal.show();
       P.importProgressStatus.textContent = 'Parsing CSV file...';
       P.importProgressBar.style.width = '0%';
@@ -283,8 +283,8 @@ window.SupplierHistory = (function () {
         const tekshirdiIndex = headers.indexOf('tekshirdi');
         const izohIndex = headers.indexOf('izoh');
 
-        const dataRows = rawRows.slice(1).filter(row => 
-          row.length > Math.max(sanaIndex, fnIndex, detailIdIndex, soniIndex) && 
+        const dataRows = rawRows.slice(1).filter(row =>
+          row.length > Math.max(sanaIndex, fnIndex, detailIdIndex, soniIndex) &&
           row[sanaIndex].trim() !== ''
         );
 
@@ -292,91 +292,14 @@ window.SupplierHistory = (function () {
           throw new Error('No valid records found in the CSV.');
         }
 
-        P.importProgressStatus.textContent = 'Analyzing inspectors and parts...';
+        P.importProgressStatus.textContent = 'Preparing records...';
         P.importProgressDetail.textContent = `Found ${dataRows.length} rows.`;
 
-        const inspectors = await InspectorRepository.getAll();
-        const inspectorMap = new Map(inspectors.map(i => [i.fullName.trim().toLowerCase(), i.id]));
-
-        const uniqueInspectors = new Set();
-        dataRows.forEach(row => {
-          const insName = row[tekshirdiIndex] ? row[tekshirdiIndex].trim() : 'Unknown';
-          if (insName) uniqueInspectors.add(insName);
-        });
-
-        for (const insName of uniqueInspectors) {
-          const key = insName.toLowerCase();
-          if (!inspectorMap.has(key)) {
-            P.importProgressDetail.textContent = `Creating inspector: ${insName}...`;
-            const newIns = await InspectorRepository.add(insName);
-            inspectorMap.set(key, newIns.id);
-          }
-        }
-
-        const allParts = await PartRepository.getAll();
-        const partNameMap = new Map();
-        allParts.forEach(p => {
-          if (p.detailId && p.detailName) {
-            partNameMap.set(p.detailId.trim().toUpperCase(), p.detailName.trim());
-          }
-        });
-
-        const activeParts = await PartRepository.getBySupplier(P.activeSupplierId);
-        const activePartIds = new Set(activeParts.map(p => p.detailId.trim().toUpperCase()));
-
-        const uniqueDetailIds = new Set();
-        dataRows.forEach(row => {
-          const detId = row[detailIdIndex] ? row[detailIdIndex].trim().toUpperCase() : '';
-          if (detId) uniqueDetailIds.add(detId);
-        });
-
-        const newPartsToAdd = [];
-        uniqueDetailIds.forEach(detId => {
-          if (!activePartIds.has(detId)) {
-            newPartsToAdd.push(detId);
-          }
-        });
-
-        if (newPartsToAdd.length > 0) {
-          P.importProgressDetail.textContent = `Registering ${newPartsToAdd.length} new parts for ${activeSupplierName}...`;
-          
-          let partBatch = db.batch();
-          let count = 0;
-          for (let i = 0; i < newPartsToAdd.length; i++) {
-            const detId = newPartsToAdd[i];
-            const detailName = partNameMap.get(detId) || `Part ${detId}`;
-            const docRef = db.collection('parts').doc();
-            partBatch.set(docRef, {
-              supplierId: P.activeSupplierId,
-              supplierName: activeSupplierName,
-              detailId: detId,
-              detailName: detailName,
-              createdAt: new Date().toISOString()
-            });
-            count++;
-            if (count === 500) {
-              await PerfStats.timeWrite('csvImport.partsBatch', () => partBatch.commit());
-              partBatch = db.batch();
-              count = 0;
-            }
-          }
-          if (count > 0) {
-            await PerfStats.timeWrite('csvImport.partsBatch', () => partBatch.commit());
-          }
-          
-          Cache.invalidate('parts:all');
-          Cache.invalidate(`parts:bySupplier:${P.activeSupplierId}`);
-        }
-
-        const totalRecords = dataRows.length;
-        let recordsProcessed = 0;
-        let writeBatch = db.batch();
-        let batchCount = 0;
-        const importedYears = new Set();
-
-        for (let i = 0; i < totalRecords; i++) {
-          const row = dataRows[i];
-
+        // CSV parsing/normalization stays client-side (pure text processing);
+        // the parsed rows are sent in one request to the API, which resolves/
+        // creates inspectors and parts and bulk-inserts the records server-side
+        // (previously: many small Firestore batches issued directly from here).
+        const rows = dataRows.map(row => {
           const rawDate = row[sanaIndex].trim();
           let dateFormatted = '';
           const dateParts = rawDate.split('.');
@@ -391,76 +314,33 @@ window.SupplierHistory = (function () {
             }
           }
 
-          const fn = row[fnIndex] ? row[fnIndex].trim() : '';
-          const detailId = row[detailIdIndex] ? row[detailIdIndex].trim().toUpperCase() : '';
-          const qty = parseInt(row[soniIndex]) || 0;
-          const checked = (tekshirildiIndex !== -1 && row[tekshirildiIndex]) ? parseInt(row[tekshirildiIndex]) || 0 : qty;
-          const returned = (qaytarildiIndex !== -1 && row[qaytarildiIndex]) ? parseInt(row[qaytarildiIndex]) || 0 : 0;
-          const comment = (izohIndex !== -1 && row[izohIndex]) ? row[izohIndex].trim() : 'OK';
-          const insName = (tekshirdiIndex !== -1 && row[tekshirdiIndex]) ? row[tekshirdiIndex].trim() : 'Unknown';
-          const inspectorId = inspectorMap.get(insName.toLowerCase()) || 'unknown';
-
-          let detailName = partNameMap.get(detailId);
-          if (!detailName) {
-            detailName = `Part ${detailId}`;
-            partNameMap.set(detailId, detailName);
-          }
-
-          const importedYear = new Date(dateFormatted).getFullYear();
-          if (!isNaN(importedYear)) importedYears.add(importedYear);
-
-          const newRecordDocRef = db.collection('records').doc();
-          writeBatch.set(newRecordDocRef, {
+          return {
             date: dateFormatted,
-            fn: fn,
-            supplierId: P.activeSupplierId,
-            supplierName: activeSupplierName,
-            detailId: detailId,
-            detailName: detailName,
-            quantity: qty,
-            checkedQuantity: checked,
-            returnedQuantity: returned,
-            inspectorId: inspectorId,
-            inspectorName: insName,
-            comment: comment || 'OK',
-            createdAt: new Date().toISOString()
-          });
+            fn: row[fnIndex] ? row[fnIndex].trim() : '',
+            detailId: row[detailIdIndex] ? row[detailIdIndex].trim().toUpperCase() : '',
+            quantity: parseInt(row[soniIndex]) || 0,
+            checkedQuantity: (tekshirildiIndex !== -1 && row[tekshirildiIndex]) ? parseInt(row[tekshirildiIndex]) || 0 : (parseInt(row[soniIndex]) || 0),
+            returnedQuantity: (qaytarildiIndex !== -1 && row[qaytarildiIndex]) ? parseInt(row[qaytarildiIndex]) || 0 : 0,
+            comment: (izohIndex !== -1 && row[izohIndex]) ? row[izohIndex].trim() : 'OK',
+            inspectorName: (tekshirdiIndex !== -1 && row[tekshirdiIndex]) ? row[tekshirdiIndex].trim() : 'Unknown'
+          };
+        });
 
-          batchCount++;
-          recordsProcessed++;
+        P.importProgressStatus.textContent = 'Importing history records...';
+        P.importProgressBar.style.width = '50%';
+        P.importProgressBar.setAttribute('aria-valuenow', 50);
+        P.importProgressDetail.textContent = `Uploading ${rows.length} records...`;
 
-          if (batchCount === 500) {
-            P.importProgressStatus.textContent = `Importing history records...`;
-            const percent = Math.round((recordsProcessed / totalRecords) * 100);
-            P.importProgressBar.style.width = `${percent}%`;
-            P.importProgressBar.setAttribute('aria-valuenow', percent);
-            P.importProgressDetail.textContent = `${recordsProcessed} / ${totalRecords} records written...`;
+        const result = await ReceivingRepository.importRows(P.activeSupplierId, activeSupplierName, rows);
 
-            await PerfStats.timeWrite('csvImport.recordsBatch', () => writeBatch.commit());
-            writeBatch = db.batch();
-            batchCount = 0;
-          }
-        }
+        P.importProgressBar.style.width = '100%';
+        P.importProgressBar.setAttribute('aria-valuenow', 100);
+        P.importProgressDetail.textContent = `${result.imported} / ${rows.length} records written...`;
 
-        if (batchCount > 0) {
-          P.importProgressStatus.textContent = `Importing final history records...`;
-          P.importProgressBar.style.width = '100%';
-          P.importProgressBar.setAttribute('aria-valuenow', 100);
-          P.importProgressDetail.textContent = `${recordsProcessed} / ${totalRecords} records written...`;
-          await PerfStats.timeWrite('csvImport.recordsBatch', () => writeBatch.commit());
-        }
+        Cache.invalidate('parts:all');
+        Cache.invalidate(`parts:bySupplier:${P.activeSupplierId}`);
 
-        if (importedYears.size > 0) {
-          await PerfStats.timeWrite('csvImport.metaYears', () => db.collection('meta').doc('years').set({
-            values: firebase.firestore.FieldValue.arrayUnion(...importedYears)
-          }, { merge: true }));
-        }
-
-        Cache.invalidate(`records:bySupplier:${P.activeSupplierId}`);
-        Cache.invalidate('records:latest30');
-        Cache.invalidate('records:distinctYears');
-
-        UI.showToast(`Successfully imported ${recordsProcessed} delivery records!`);
+        UI.showToast(`Successfully imported ${result.imported} delivery records!`);
         P.importProgressModal.hide();
 
         await SupplierList.load();
