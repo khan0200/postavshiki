@@ -140,7 +140,7 @@ window.PartRepository = (function () {
     },
 
     async transfer(partId, sourceSupplierId, targetSupplierId, targetSupplierName) {
-      const updated = await PerfStats.timeWrite(`parts.transfer:${partId}`, () => apiRequest('POST', '/api/parts/transfer', {
+      const updated = await PerfStats.timeWrite(`parts.transfer:${partId}`, () => apiRequest('POST', '/api/parts?action=transfer', {
         partId,
         targetSupplierId,
         targetSupplierName
