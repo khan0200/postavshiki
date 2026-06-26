@@ -78,24 +78,24 @@
               
               <!-- Row 1: Date, F/N, Supplier, Detail ID, Detail Name -->
               <div class="row g-3 mb-3">
-                <div class="form-col-date col-sm-6">
+                <div class="form-col-date col-12 col-sm-6">
                   <label for="rec-date" class="form-label small fw-semibold">Date</label>
                   <input type="date" class="form-control" id="rec-date" required>
                   <div class="invalid-feedback">Required.</div>
                 </div>
-                <div class="form-col-fn col-sm-6">
+                <div class="form-col-fn col-12 col-sm-6">
                   <label for="rec-fn" class="form-label small fw-semibold">F/N (PO Number)</label>
                   <input type="text" class="form-control" id="rec-fn" placeholder="e.g. PO-5531" required>
                   <div class="invalid-feedback">F/N is required.</div>
                 </div>
-                <div class="form-col-supplier col-sm-6">
+                <div class="form-col-supplier col-12 col-sm-6">
                   <label for="rec-supplier" class="form-label small fw-semibold">Supplier</label>
                   <select class="form-select" id="rec-supplier" required>
                     <option value="" selected disabled>Choose Supplier...</option>
                   </select>
                   <div class="invalid-feedback">Please select a supplier.</div>
                 </div>
-                <div class="form-col-detail-id col-sm-6">
+                <div class="form-col-detail-id col-12 col-sm-6">
                   <label for="rec-detail-search" class="form-label small fw-semibold">Detail ID (Part Number)</label>
                   <div class="custom-dropdown-container">
                     <input type="text" class="form-control" id="rec-detail-search" placeholder="Select supplier first..." autocomplete="off" disabled required>
@@ -112,17 +112,17 @@
 
               <!-- Row 2: Qty Received, Qty Checked, Qty Returned, Inspector, Comments -->
               <div class="row g-3 mb-4">
-                <div class="form-col-qty col-4">
+                <div class="form-col-qty col-6 col-sm-4">
                   <label for="rec-quantity" class="form-label small fw-semibold">Qty Received</label>
                   <input type="number" class="form-control" id="rec-quantity" min="1" placeholder="e.g. 5" required>
                   <div class="invalid-feedback">Must be > 0.</div>
                 </div>
-                <div class="form-col-qty col-4">
+                <div class="form-col-qty col-6 col-sm-4">
                   <label for="rec-checked-qty" class="form-label small fw-semibold">Qty Checked</label>
                   <input type="number" class="form-control" id="rec-checked-qty" min="0" value="5" required>
                   <div class="invalid-feedback">Cannot exceed Qty.</div>
                 </div>
-                <div class="form-col-qty col-4">
+                <div class="form-col-qty col-12 col-sm-4">
                   <label for="rec-returned-qty" class="form-label small fw-semibold">Qty Returned</label>
                   <input type="number" class="form-control" id="rec-returned-qty" min="0" value="0" required>
                   <div class="invalid-feedback">Cannot exceed Checked.</div>
@@ -176,7 +176,7 @@
             
             <!-- Table Search and Actions -->
             <div class="d-flex align-items-center gap-2">
-              <div class="premium-search-group" style="max-width: 250px;">
+              <div class="premium-search-group">
                 <span class="premium-search-icon">
                   <i class="bi bi-search"></i>
                 </span>
@@ -232,6 +232,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
   <!-- Project scripts -->
+  <script src="js/perf-stats.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/cache.js"></script>
   <script src="js/utils.js"></script>

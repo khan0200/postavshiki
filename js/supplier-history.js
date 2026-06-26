@@ -355,13 +355,13 @@ window.SupplierHistory = (function () {
             });
             count++;
             if (count === 500) {
-              await partBatch.commit();
+              await PerfStats.timeWrite('csvImport.partsBatch', () => partBatch.commit());
               partBatch = db.batch();
               count = 0;
             }
           }
           if (count > 0) {
-            await partBatch.commit();
+            await PerfStats.timeWrite('csvImport.partsBatch', () => partBatch.commit());
           }
           
           Cache.invalidate('parts:all');
@@ -372,6 +372,7 @@ window.SupplierHistory = (function () {
         let recordsProcessed = 0;
         let writeBatch = db.batch();
         let batchCount = 0;
+        const importedYears = new Set();
 
         for (let i = 0; i < totalRecords; i++) {
           const row = dataRows[i];
@@ -405,6 +406,9 @@ window.SupplierHistory = (function () {
             partNameMap.set(detailId, detailName);
           }
 
+          const importedYear = new Date(dateFormatted).getFullYear();
+          if (!isNaN(importedYear)) importedYears.add(importedYear);
+
           const newRecordDocRef = db.collection('records').doc();
           writeBatch.set(newRecordDocRef, {
             date: dateFormatted,
@@ -432,7 +436,7 @@ window.SupplierHistory = (function () {
             P.importProgressBar.setAttribute('aria-valuenow', percent);
             P.importProgressDetail.textContent = `${recordsProcessed} / ${totalRecords} records written...`;
 
-            await writeBatch.commit();
+            await PerfStats.timeWrite('csvImport.recordsBatch', () => writeBatch.commit());
             writeBatch = db.batch();
             batchCount = 0;
           }
@@ -443,7 +447,13 @@ window.SupplierHistory = (function () {
           P.importProgressBar.style.width = '100%';
           P.importProgressBar.setAttribute('aria-valuenow', 100);
           P.importProgressDetail.textContent = `${recordsProcessed} / ${totalRecords} records written...`;
-          await writeBatch.commit();
+          await PerfStats.timeWrite('csvImport.recordsBatch', () => writeBatch.commit());
+        }
+
+        if (importedYears.size > 0) {
+          await PerfStats.timeWrite('csvImport.metaYears', () => db.collection('meta').doc('years').set({
+            values: firebase.firestore.FieldValue.arrayUnion(...importedYears)
+          }, { merge: true }));
         }
 
         Cache.invalidate(`records:bySupplier:${P.activeSupplierId}`);

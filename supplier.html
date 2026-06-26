@@ -57,7 +57,7 @@
     <div class="row g-4">
       
       <!-- Left Panel: Suppliers List -->
-      <div class="col-xl-2 col-lg-3">
+      <div class="col-12 col-lg-3 col-xl-2">
         <div class="card border-0 shadow-sm h-100 position-relative">
           <!-- Spinner overlay -->
           <div class="loading-overlay" id="supplier-list-spinner">
@@ -65,7 +65,7 @@
               <span class="visually-hidden">Loading...</span>
             </div>
           </div>
-          <div class="card-header py-3 d-flex justify-content-between align-items-center">
+          <div class="card-header py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
             <h6 class="card-title mb-0 d-flex align-items-center fw-bold">
               <i class="bi bi-buildings me-2 text-primary"></i>Suppliers
             </h6>
@@ -97,7 +97,7 @@
       </div>
 
       <!-- Right Panel: Details Tabs -->
-      <div class="col-xl-10 col-lg-9">
+      <div class="col-12 col-lg-9 col-xl-10">
         <!-- Active Supplier Card Container -->
         <div class="card border-0 shadow-sm h-100 position-relative" id="supplier-detail-card">
           <!-- Spinner overlay -->
@@ -108,37 +108,37 @@
           </div>
           
           <!-- Card Header / Title -->
-          <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <div>
+          <div class="card-header py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="text-truncate">
               <span class="text-muted small text-uppercase fw-semibold">Supplier Dashboard</span>
-              <h4 class="mb-0 fw-bold text-primary" id="detail-supplier-name">Select a Supplier</h4>
+              <h4 class="mb-0 fw-bold text-primary text-truncate" id="detail-supplier-name">Select a Supplier</h4>
             </div>
             <div class="d-flex gap-2" id="supplier-actions-group">
               <!-- Edit / Delete supplier buttons (visible when a supplier is selected) -->
-              <button class="btn btn-outline-secondary btn-sm" id="btn-edit-supplier" disabled>
+              <button class="btn btn-outline-secondary btn-sm text-nowrap" id="btn-edit-supplier" disabled>
                 <i class="bi bi-pencil-fill me-1"></i>Rename
               </button>
-              <button class="btn btn-outline-danger btn-sm" id="btn-delete-supplier" disabled>
+              <button class="btn btn-outline-danger btn-sm text-nowrap" id="btn-delete-supplier" disabled>
                 <i class="bi bi-trash-fill me-1"></i>Delete
               </button>
             </div>
           </div>
 
           <!-- Tabs Navigation -->
-          <div class="bg-body-tertiary border-bottom px-3">
-            <ul class="nav nav-tabs border-bottom-0" id="supplierTabs" role="tablist">
+          <div class="bg-body-tertiary border-bottom px-3 tabs-scroll-x">
+            <ul class="nav nav-tabs border-bottom-0 flex-nowrap" id="supplierTabs" role="tablist">
               <li class="nav-item" role="presentation">
-                <button class="nav-link active py-2.5" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-tab-pane" type="button" role="tab" aria-controls="history-tab-pane" aria-selected="true">
+                <button class="nav-link active py-2.5 text-nowrap" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-tab-pane" type="button" role="tab" aria-controls="history-tab-pane" aria-selected="true">
                   <i class="bi bi-clock-history me-1"></i>History
                 </button>
               </li>
               <li class="nav-item" role="presentation">
-                <button class="nav-link py-2.5" id="parts-tab" data-bs-toggle="tab" data-bs-target="#parts-tab-pane" type="button" role="tab" aria-controls="parts-tab-pane" aria-selected="false">
+                <button class="nav-link py-2.5 text-nowrap" id="parts-tab" data-bs-toggle="tab" data-bs-target="#parts-tab-pane" type="button" role="tab" aria-controls="parts-tab-pane" aria-selected="false">
                   <i class="bi bi-boxes me-1"></i>Parts List
                 </button>
               </li>
               <li class="nav-item" role="presentation">
-                <button class="nav-link py-2.5" id="charts-tab" data-bs-toggle="tab" data-bs-target="#charts-tab-pane" type="button" role="tab" aria-controls="charts-tab-pane" aria-selected="false">
+                <button class="nav-link py-2.5 text-nowrap" id="charts-tab" data-bs-toggle="tab" data-bs-target="#charts-tab-pane" type="button" role="tab" aria-controls="charts-tab-pane" aria-selected="false">
                   <i class="bi bi-bar-chart-line me-1"></i>Reports & Stats
                 </button>
               </li>
@@ -150,13 +150,13 @@
             
             <!-- TAB 1: History -->
             <div class="tab-pane fade show active" id="history-tab-pane" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
-              <div class="d-flex justify-content-between align-items-center mb-3">
+              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                 <h6 class="fw-bold mb-0">
                   <span>Delivery History</span>
                   <span class="text-secondary fw-normal ms-1" id="history-recs-count" style="font-size: 0.9rem;"></span>
                 </h6>
-                <div class="d-flex gap-2">
-                  <div class="premium-search-group" style="max-width: 250px;">
+                <div class="d-flex flex-wrap gap-2 toolbar-actions">
+                  <div class="premium-search-group">
                     <span class="premium-search-icon">
                       <i class="bi bi-search"></i>
                     </span>
@@ -194,7 +194,7 @@
               </div>
 
               <!-- Pagination -->
-              <div class="d-flex justify-content-between align-items-center mt-3" id="history-pager-bar">
+              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3" id="history-pager-bar">
                 <span class="small text-muted" id="history-info-summary">Showing 0 to 0 of 0 entries</span>
                 <nav>
                   <ul class="pagination pagination-sm mb-0" id="history-pagination"></ul>
@@ -206,8 +206,8 @@
             <div class="tab-pane fade" id="parts-tab-pane" role="tabpanel" aria-labelledby="parts-tab" tabindex="0">
               <div class="d-flex justify-content-between flex-wrap gap-2 align-items-center mb-3">
                 <h6 class="fw-bold mb-0">Produced Parts Catalog</h6>
-                <div class="d-flex gap-2 align-items-center">
-                  <div class="premium-search-group" style="max-width: 220px;">
+                <div class="d-flex flex-wrap gap-2 align-items-center toolbar-actions">
+                  <div class="premium-search-group premium-search-group-sm">
                     <span class="premium-search-icon">
                       <i class="bi bi-search"></i>
                     </span>
@@ -226,7 +226,7 @@
                       <th scope="col" class="sortable-header" data-sort="detailId">Detail ID</th>
                       <th scope="col" class="sortable-header" data-sort="detailName">Detail Name</th>
                       <th scope="col" class="sortable-header" data-sort="createdAt">Created Date</th>
-                      <th scope="col" class="text-center" style="width: 150px;">Actions</th>
+                      <th scope="col" class="text-center col-actions">Actions</th>
                     </tr>
                   </thead>
                   <tbody id="parts-table-body">
@@ -240,7 +240,7 @@
               </div>
 
               <!-- Pagination -->
-              <div class="d-flex justify-content-between align-items-center mt-3" id="parts-pager-bar">
+              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3" id="parts-pager-bar">
                 <span class="small text-muted" id="parts-info-summary">Showing 0 to 0 of 0 entries</span>
                 <nav>
                   <ul class="pagination pagination-sm mb-0" id="parts-pagination"></ul>
@@ -251,16 +251,16 @@
             <!-- TAB 3: Charts -->
             <div class="tab-pane fade" id="charts-tab-pane" role="tabpanel" aria-labelledby="charts-tab" tabindex="0">
               <!-- Filter Selectors -->
-              <div class="d-flex align-items-center gap-2 mb-4 bg-body-secondary p-3 rounded-3 border">
-                <div class="d-flex align-items-center gap-1.5">
+              <div class="d-flex flex-wrap align-items-center gap-2 mb-4 bg-body-secondary p-3 rounded-3 border">
+                <div class="d-flex align-items-center gap-1.5 chart-filter-group">
                   <label for="chart-year" class="small fw-semibold text-muted text-nowrap me-1">Year:</label>
-                  <select class="form-select form-select-sm" id="chart-year" style="width: 100px;">
+                  <select class="form-select form-select-sm chart-filter-select" id="chart-year">
                     <!-- Auto-populated years -->
                   </select>
                 </div>
-                <div class="d-flex align-items-center gap-1.5">
+                <div class="d-flex align-items-center gap-1.5 chart-filter-group">
                   <label for="chart-month" class="small fw-semibold text-muted text-nowrap me-1">Month Details:</label>
-                  <select class="form-select form-select-sm" id="chart-month" style="width: 130px;">
+                  <select class="form-select form-select-sm chart-filter-select" id="chart-month">
                     <option value="all" selected>All Months</option>
                     <option value="0">January</option>
                     <option value="1">February</option>
@@ -403,7 +403,7 @@
 
   <!-- Edit Delivery/Receiving Record Modal -->
   <div class="modal fade" id="editRecordModal" tabindex="-1" aria-labelledby="editRecordModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
       <div class="modal-content border-0 shadow-lg">
         <form id="edit-record-form" novalidate>
           <div class="modal-header">
@@ -417,17 +417,17 @@
             
             <!-- Row 1: Date, F/N, Inspector -->
             <div class="row g-3 mb-3">
-              <div class="col-md-4">
+              <div class="col-12 col-sm-6 col-md-4">
                 <label for="edit-rec-date" class="form-label small fw-semibold">Date</label>
                 <input type="date" class="form-control" id="edit-rec-date" required>
                 <div class="invalid-feedback">Required.</div>
               </div>
-              <div class="col-md-4">
+              <div class="col-12 col-sm-6 col-md-4">
                 <label for="edit-rec-fn" class="form-label small fw-semibold">F/N (PO Number)</label>
                 <input type="text" class="form-control" id="edit-rec-fn" required>
                 <div class="invalid-feedback">Required.</div>
               </div>
-              <div class="col-md-4">
+              <div class="col-12 col-md-4">
                 <label for="edit-rec-inspector" class="form-label small fw-semibold">Inspector</label>
                 <select class="form-select" id="edit-rec-inspector" required>
                   <!-- Populated dynamically via JS -->
@@ -438,7 +438,7 @@
 
             <!-- Row 2: Part selection -->
             <div class="row g-3 mb-3">
-              <div class="col-md-12">
+              <div class="col-12">
                 <label for="edit-rec-part" class="form-label small fw-semibold">Part Number (Detail ID)</label>
                 <select class="form-select" id="edit-rec-part" required>
                   <!-- Populated dynamically via JS -->
@@ -449,17 +449,17 @@
 
             <!-- Row 3: Quantities -->
             <div class="row g-3 mb-3">
-              <div class="col-md-4">
+              <div class="col-6 col-md-4">
                 <label for="edit-rec-qty" class="form-label small fw-semibold">Qty Received</label>
                 <input type="number" class="form-control" id="edit-rec-qty" min="1" required>
                 <div class="invalid-feedback">Must be > 0.</div>
               </div>
-              <div class="col-md-4">
+              <div class="col-6 col-md-4">
                 <label for="edit-rec-checked" class="form-label small fw-semibold">Qty Checked</label>
                 <input type="number" class="form-control" id="edit-rec-checked" min="0" required>
                 <div class="invalid-feedback">Cannot exceed Qty Received.</div>
               </div>
-              <div class="col-md-4">
+              <div class="col-12 col-md-4">
                 <label for="edit-rec-returned" class="form-label small fw-semibold">Qty Returned</label>
                 <input type="number" class="form-control" id="edit-rec-returned" min="0" required>
                 <div class="invalid-feedback">Cannot exceed Qty Checked.</div>
@@ -513,6 +513,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
   <!-- Scripts -->
+  <script src="js/perf-stats.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/cache.js"></script>
   <script src="js/utils.js"></script>

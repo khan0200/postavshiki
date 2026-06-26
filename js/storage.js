@@ -39,7 +39,7 @@ async function seedFirestoreIfNeeded() {
   if (localStorage.getItem(SEED_CHECK_FLAG) === '1') return;
 
   try {
-    const suppliersSnap = await db.collection('suppliers').get();
+    const suppliersSnap = await PerfStats.timeRead('seedCheck.suppliers', () => db.collection('suppliers').get());
     if (suppliersSnap.empty) {
       console.log('%c🌱 Seeding Firebase Firestore with initial industrial data...', 'color: green; font-weight: bold;');
 

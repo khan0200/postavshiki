@@ -55,7 +55,7 @@
     <div class="row g-4">
       
       <!-- Left Sidebar Menu -->
-      <div class="col-xl-3 col-lg-4">
+      <div class="col-12 col-lg-4 col-xl-3">
         <div class="card border-0 shadow-sm">
           <div class="card-header py-3">
             <h5 class="card-title mb-0 d-flex align-items-center">
@@ -82,7 +82,7 @@
       </div>
 
       <!-- Right Content Panel -->
-      <div class="col-xl-9 col-lg-8">
+      <div class="col-12 col-lg-8 col-xl-9">
         
         <!-- View 1: Inspectors Configuration -->
         <div class="card border-0 shadow-sm position-relative" id="view-inspectors-card">
@@ -92,12 +92,12 @@
               <span class="visually-hidden">Loading...</span>
             </div>
           </div>
-          <div class="card-header py-3 d-flex justify-content-between align-items-center">
+          <div class="card-header py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
             <div>
               <h5 class="card-title mb-0">Quality Control Inspectors</h5>
               <p class="text-muted small mb-0">Manage personnel authorized to check and accept incoming deliveries</p>
             </div>
-            <button class="btn btn-primary btn-sm" id="btn-add-inspector">
+            <button class="btn btn-primary btn-sm text-nowrap" id="btn-add-inspector">
               <i class="bi bi-person-plus-fill me-1"></i>Add Inspector
             </button>
           </div>
@@ -107,7 +107,7 @@
                 <thead>
                   <tr>
                     <th scope="col">Full Name</th>
-                    <th scope="col" class="text-center" style="width: 150px;">Actions</th>
+                    <th scope="col" class="text-center col-actions">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="inspectors-table-body">
@@ -126,12 +126,12 @@
               <span class="visually-hidden">Loading...</span>
             </div>
           </div>
-          <div class="card-header py-3 d-flex justify-content-between align-items-center">
+          <div class="card-header py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
             <div>
               <h5 class="card-title mb-0">Predefined QC Comments</h5>
               <p class="text-muted small mb-0">Manage quick-select comment options for registration entries</p>
             </div>
-            <button class="btn btn-primary btn-sm" id="btn-add-comment">
+            <button class="btn btn-primary btn-sm text-nowrap" id="btn-add-comment">
               <i class="bi bi-chat-square-quote-fill me-1"></i>Add Preset
             </button>
           </div>
@@ -141,7 +141,7 @@
                 <thead>
                   <tr>
                     <th scope="col">Comment Text</th>
-                    <th scope="col" class="text-center" style="width: 150px;">Actions</th>
+                    <th scope="col" class="text-center col-actions">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="comments-table-body">
@@ -218,6 +218,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
   <!-- Scripts -->
+  <script src="js/perf-stats.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/cache.js"></script>
   <script src="js/utils.js"></script>

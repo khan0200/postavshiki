@@ -2,6 +2,8 @@
  * cache.js - Generic in-memory cache layer sitting between Repositories and Firestore.
  * Collections are cached whole (suppliers/inspectors/comments are small + low-churn).
  * Repositories are responsible for invalidating the right keys after writes.
+ * Hit/miss events are reported to PerfStats (js/perf-stats.js) for observability only -
+ * instrumentation never changes caching behavior or return values.
  */
 
 window.Cache = (function () {
@@ -39,10 +41,12 @@ window.Cache = (function () {
      */
     async getOrLoad(key, loader) {
       if (store.has(key)) {
+        if (window.PerfStats) PerfStats.recordCacheHit(key);
         const cached = store.get(key);
         // In-flight promises are cached too, so concurrent callers await the same request.
         return cached;
       }
+      if (window.PerfStats) PerfStats.recordCacheMiss(key);
       const promise = Promise.resolve().then(loader).catch(err => {
         // Loading failed - do not leave a broken promise cached, allow retry next call.
         store.delete(key);
