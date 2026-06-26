@@ -7,10 +7,10 @@
     "migrate:firestore-to-turso": "node scripts/migrate-firestore-to-turso.js"
   },
   "dependencies": {
-    "@libsql/client": "^0.14.0",
-    "firebase-admin": "^12.6.0"
+    "@libsql/client": "^0.14.0"
   },
   "devDependencies": {
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "firebase-admin": "^12.6.0"
   }
 }
