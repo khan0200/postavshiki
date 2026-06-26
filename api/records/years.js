@@ -4,8 +4,8 @@
  * reads the small meta_years table (maintained incrementally on every record
  * write) instead of scanning the full records table.
  */
-const { getClient } = require('../_lib/turso');
-const { sendJson } = require('../_lib/http');
+const { getClient } = require('../lib/turso');
+const { sendJson } = require('../lib/http');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'GET') {

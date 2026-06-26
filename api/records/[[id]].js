@@ -7,8 +7,8 @@
  * from js/repositories.js. (years.js and import.js stay separate - different
  * URL shapes, not REST-id-based.)
  */
-const { getClient } = require('../_lib/turso');
-const { sendJson, genId, readBody } = require('../_lib/http');
+const { getClient } = require('../lib/turso');
+const { sendJson, genId, readBody } = require('../lib/http');
 
 async function recordYear(db, dateStr) {
   if (!dateStr) return;

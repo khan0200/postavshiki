@@ -7,8 +7,8 @@
  * Mirrors PartRepository.getAll/.getBySupplier/.add/.update/.remove/.transfer
  * from js/repositories.js.
  */
-const { getClient } = require('../_lib/turso');
-const { sendJson, genId, readBody } = require('../_lib/http');
+const { getClient } = require('../lib/turso');
+const { sendJson, genId, readBody } = require('../lib/http');
 
 module.exports = async function handler(req, res) {
   const db = getClient();

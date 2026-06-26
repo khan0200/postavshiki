@@ -14,8 +14,8 @@
  *     rows: [{ date, fn, detailId, quantity, checkedQuantity, returnedQuantity, comment, inspectorName }]
  *   }
  */
-const { getClient } = require('../_lib/turso');
-const { sendJson, genId, readBody } = require('../_lib/http');
+const { getClient } = require('../lib/turso');
+const { sendJson, genId, readBody } = require('../lib/http');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {

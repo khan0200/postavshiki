@@ -1,5 +1,5 @@
 /**
- * api/_lib/turso.js - Shared libSQL client for all Vercel serverless functions.
+ * api/lib/turso.js - Shared libSQL client for all Vercel serverless functions.
  * The Turso auth token lives only here, server-side, read from env vars -
  * it is never sent to or embedded in any browser-facing code.
  */

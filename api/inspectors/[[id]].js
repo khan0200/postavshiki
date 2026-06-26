@@ -5,8 +5,8 @@
  * plan's serverless function count limit.
  * Mirrors InspectorRepository.getAll/.add/.update/.remove from js/repositories.js.
  */
-const { getClient } = require('../_lib/turso');
-const { sendJson, genId, readBody } = require('../_lib/http');
+const { getClient } = require('../lib/turso');
+const { sendJson, genId, readBody } = require('../lib/http');
 
 module.exports = async function handler(req, res) {
   const db = getClient();

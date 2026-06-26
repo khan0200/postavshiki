@@ -1,5 +1,5 @@
 /**
- * api/_lib/http.js - Tiny shared helpers for Vercel Node serverless functions
+ * api/lib/http.js - Tiny shared helpers for Vercel Node serverless functions
  * (these are plain (req, res) handlers, not Express - no framework needed at this scale).
  */
 
