@@ -650,3 +650,16 @@ main.container-fluid {
   color: rgba(255, 255, 255, 0.75) !important;
 }
 
+/* Make submit button blue */
+#submit-btn {
+  background-color: #0d6efd !important;
+  border-color: #0d6efd !important;
+  color: #ffffff !important;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+#submit-btn:hover, #submit-btn:focus {
+  background-color: #0b5ed7 !important;
+  border-color: #0a58ca !important;
+  color: #ffffff !important;
+}
+
