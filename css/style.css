@@ -464,7 +464,7 @@ main.container-fluid {
   display: flex;
   align-items: center;
   width: 100%;
-  max-width: 250px;
+  max-width: 300px;
   border-radius: 0.5rem;
   border: 1px solid var(--border-color);
   background-color: rgba(0, 0, 0, 0.02);
@@ -472,7 +472,7 @@ main.container-fluid {
 }
 
 .premium-search-group-sm {
-  max-width: 220px;
+  max-width: 264px;
 }
 
 @media (max-width: 575.98px) {
@@ -593,7 +593,7 @@ main.container-fluid {
 
 /* 2. Qabul Qilish Yozuvlari Jurnali searchbar width and height increase by 20% */
 #table-search-group {
-  max-width: 320px !important; /* 250px * 1.28 */
+  width: 300px !important; 
 }
 #table-search {
   padding-top: 0.45rem !important;
@@ -603,7 +603,7 @@ main.container-fluid {
 
 /* 3. Yetkazib beruvchi paneli: Tarix and Detallar ro'yxati searchbars + filters width & height increase by 20% */
 #history-search-group {
-  max-width: 300px !important; /* 250px * 1.2 */
+  width: 300px !important;
 }
 #history-search {
   padding-top: 0.45rem !important;
@@ -612,7 +612,7 @@ main.container-fluid {
 }
 
 #parts-search-group {
-  max-width: 264px !important; /* 220px * 1.2 */
+  width: 264px !important;
 }
 #parts-search {
   padding-top: 0.45rem !important;
