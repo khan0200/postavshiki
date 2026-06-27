@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
         CommentRepository.getAll()
       ]);
 
-      supplierSelect.innerHTML = '<option value="" selected disabled>Choose Supplier...</option>';
+      supplierSelect.innerHTML = '<option value="" selected disabled>Yetkazib beruvchini tanlang...</option>';
       suppliers.slice().sort((a, b) => {
         const countA = parts.filter(p => p.supplierId === a.id).length;
         const countB = parts.filter(p => p.supplierId === b.id).length;
@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
         supplierSelect.appendChild(opt);
       });
 
-      inspectorSelect.innerHTML = '<option value="" selected disabled>Select Inspector...</option>';
+      inspectorSelect.innerHTML = '<option value="" selected disabled>Inspektorni tanlang...</option>';
       inspectors.slice().sort((a, b) => a.fullName.localeCompare(b.fullName)).forEach(ins => {
         const opt = document.createElement('option');
         opt.value = ins.id;
@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
       detailDropdownMenu.classList.remove('show');
       detailSearch.classList.remove('is-invalid');
     },
-    emptyText: 'No parts found'
+    emptyText: 'Detallar topilmadi'
   });
   // The generic component's item markup is `<span>...</span>` pairs with no
   // flex wrapper; this page's CSS expects the flex/justify classes on the
@@ -198,23 +198,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (selectedSupplierId) {
       detailSearch.disabled = true;
-      detailSearch.placeholder = 'Loading parts...';
+      detailSearch.placeholder = 'Detallar yuklanmoqda...';
       if (formSpinner) formSpinner.classList.add('active');
       try {
         activeParts = await PartRepository.getBySupplier(selectedSupplierId);
         detailSearch.disabled = false;
-        detailSearch.placeholder = 'Type to search Detail ID...';
+        detailSearch.placeholder = 'Qidirish uchun yozing...';
         renderDetailDropdownMenu();
       } catch (err) {
         console.error('Error fetching parts:', err);
-        detailSearch.placeholder = 'Failed to load parts';
+        detailSearch.placeholder = 'Yuklashda xatolik';
       } finally {
         if (formSpinner) formSpinner.classList.remove('active');
       }
     } else {
       activeParts = [];
       detailSearch.disabled = true;
-      detailSearch.placeholder = 'Select supplier first...';
+      detailSearch.placeholder = 'Avval yetkazib beruvchini tanlang...';
     }
   });
 
@@ -281,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     detailSearch.value = '';
     detailSearch.disabled = true;
-    detailSearch.placeholder = 'Select supplier first...';
+    detailSearch.placeholder = 'Avval yetkazib beruvchini tanlang...';
     detailIdHidden.value = '';
     detailNameInput.textContent = '';
 
@@ -382,7 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setValidation(inspectorSelect, inspectorSelect.value !== '');
 
     if (!isValid) {
-      UI.showToast('Please correct validation errors on the form.', 'error');
+      UI.showToast('Iltimos, formadagi xatolarni to\'g\'rilang.', 'error');
       return;
     }
 
@@ -409,7 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       await ReceivingRepository.add(record);
-      UI.showToast('Receiving record registered successfully!');
+      UI.showToast('Qabul qilish yozuvi muvaffaqiyatli saqlandi!');
 
       // Keep last entered inputs in the form, just clear the validation formatting styles
       form.classList.remove('was-validated');
@@ -420,7 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await loadTableRecords();
     } catch (err) {
       console.error(err);
-      UI.showToast('Failed to save record to storage.', 'error');
+      UI.showToast('Yozuvni saqlashda xatolik yuz berdi.', 'error');
     } finally {
       submitBtn.disabled = false;
       formSpinner.classList.remove('active');
@@ -464,12 +464,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (totalEntries === 0) {
       tableBody.innerHTML = '';
       emptyState.classList.remove('d-none');
-      tableInfoSummary.textContent = `Showing 0 of ${records.length} entries (latest ${tableState.pageSize})`;
+      tableInfoSummary.textContent = `Yozuvlar ko'rsatilmoqda: 0 tadan ${records.length} ta (oxirgi ${tableState.pageSize} ta)`;
       return;
     }
 
     emptyState.classList.add('d-none');
-    tableInfoSummary.textContent = `Showing ${totalEntries} of ${records.length} entries (latest ${tableState.pageSize})`;
+    tableInfoSummary.textContent = `Yozuvlar ko'rsatilmoqda: ${totalEntries} tadan ${records.length} ta (oxirgi ${tableState.pageSize} ta)`;
 
     Utils.renderRows(tableBody, filtered, (rec) => {
       const tr = document.createElement('tr');

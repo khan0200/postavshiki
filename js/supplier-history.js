@@ -56,7 +56,7 @@ window.SupplierHistory = (function () {
       if (totalEntries === 0) {
         P.historyTableBody.innerHTML = '';
         P.historyEmpty.classList.remove('d-none');
-        P.historyInfoSummary.textContent = 'Showing 0 to 0 of 0 entries';
+        P.historyInfoSummary.textContent = 'Yozuvlar ko\'rsatilmoqda: 0 dan 0 gacha, jami 0 ta';
         P.historyPagination.innerHTML = '';
         P.historyPagerBar.classList.add('d-none');
         return;
@@ -64,7 +64,7 @@ window.SupplierHistory = (function () {
 
       P.historyEmpty.classList.add('d-none');
       P.historyPagerBar.classList.remove('d-none');
-      P.historyInfoSummary.textContent = `Showing ${startIndex + 1} to ${endIndex} of ${totalEntries} entries`;
+      P.historyInfoSummary.textContent = `Yozuvlar ko'rsatilmoqda: ${startIndex + 1} dan ${endIndex} gacha, jami ${totalEntries} ta`;
 
       Utils.renderRows(P.historyTableBody, paginated, (rec) => {
         const tr = document.createElement('tr');
@@ -120,18 +120,18 @@ window.SupplierHistory = (function () {
 
         tr.querySelector('.delete-rec-btn').addEventListener('click', () => {
           UI.confirm(
-            'Delete Record?',
-            `Are you sure you want to delete PO record ${rec.fn}? This cannot be undone.`,
+            'Yozuvni o\'chirish?',
+            `Haqiqatan ham ${rec.fn} buyurtma yozuvini o'chirmoqchisiz? Bu amalni bekor qilib bo'lmaydi.`,
             async () => {
               if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.add('active');
               try {
                 await ReceivingRepository.remove(rec.id, P.activeSupplierId);
-                UI.showToast('Record deleted.');
+                UI.showToast('Yozuv o\'chirildi.');
                 await SupplierList.load();
                 await load();
               } catch (err) {
                 console.error(err);
-                UI.showToast('Failed to delete record.', 'error');
+                UI.showToast('Yozuvni o\'chirishda xatolik yuz berdi.', 'error');
               } finally {
                 if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.remove('active');
               }
@@ -197,7 +197,7 @@ window.SupplierHistory = (function () {
       P.editRecordModal.show();
     } catch (err) {
       console.error(err);
-      UI.showToast('Failed to load record details.', 'error');
+      UI.showToast('Yozuv tafsilotlarini yuklashda xatolik yuz berdi.', 'error');
     } finally {
       if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.remove('active');
     }
@@ -240,13 +240,13 @@ window.SupplierHistory = (function () {
 
   async function handleCsvImport(file) {
     if (!P.activeSupplierId) {
-      UI.showToast('Please select a supplier first.', 'error');
+      UI.showToast('Iltimos, avval yetkazib beruvchini tanlang.', 'error');
       return;
     }
 
     const activeSupplier = await SupplierRepository.getById(P.activeSupplierId);
     if (!activeSupplier) {
-      UI.showToast('Active supplier not found.', 'error');
+      UI.showToast('Faol yetkazib beruvchi topilmadi.', 'error');
       return;
     }
     const activeSupplierName = activeSupplier.name;
@@ -256,22 +256,22 @@ window.SupplierHistory = (function () {
       const text = e.target.result;
 
       P.importProgressModal.show();
-      P.importProgressStatus.textContent = 'Parsing CSV file...';
+      P.importProgressStatus.textContent = 'CSV fayli tahlil qilinmoqda...';
       P.importProgressBar.style.width = '0%';
       P.importProgressBar.setAttribute('aria-valuenow', 0);
-      P.importProgressDetail.textContent = 'Starting parse...';
+      P.importProgressDetail.textContent = 'Tahlil boshlanmoqda...';
 
       try {
         const rawRows = parseCSV(text);
         if (rawRows.length <= 1) {
-          throw new Error('CSV is empty or contains no data rows.');
+          throw new Error('CSV fayli bo\'sh yoki unda ma\'lumotlar qatori yo\'q.');
         }
 
         const headers = rawRows[0].map(h => h.trim().toLowerCase());
         const expected = ['sana', 'f/n', 'detal id', 'soni'];
         const missing = expected.filter(exp => !headers.includes(exp));
         if (missing.length > 0) {
-          throw new Error(`Invalid CSV structure. Missing columns: ${missing.join(', ')}`);
+          throw new Error(`Noto'g'ri CSV tuzilishi. Etishmayotgan ustunlar: ${missing.join(', ')}`);
         }
 
         const sanaIndex = headers.indexOf('sana');
@@ -289,11 +289,11 @@ window.SupplierHistory = (function () {
         );
 
         if (dataRows.length === 0) {
-          throw new Error('No valid records found in the CSV.');
+          throw new Error('CSV faylida to\'g\'ri yozuvlar topilmadi.');
         }
 
-        P.importProgressStatus.textContent = 'Preparing records...';
-        P.importProgressDetail.textContent = `Found ${dataRows.length} rows.`;
+        P.importProgressStatus.textContent = 'Yozuvlar tayyorlanmoqda...';
+        P.importProgressDetail.textContent = `${dataRows.length} ta qator topildi.`;
 
         // CSV parsing/normalization stays client-side (pure text processing);
         // the parsed rows are sent in one request to the API, which resolves/
@@ -326,21 +326,21 @@ window.SupplierHistory = (function () {
           };
         });
 
-        P.importProgressStatus.textContent = 'Importing history records...';
+        P.importProgressStatus.textContent = 'Tarix yozuvlarini import qilish...';
         P.importProgressBar.style.width = '50%';
         P.importProgressBar.setAttribute('aria-valuenow', 50);
-        P.importProgressDetail.textContent = `Uploading ${rows.length} records...`;
+        P.importProgressDetail.textContent = `${rows.length} ta yozuv yuklanmoqda...`;
 
         const result = await ReceivingRepository.importRows(P.activeSupplierId, activeSupplierName, rows);
 
         P.importProgressBar.style.width = '100%';
         P.importProgressBar.setAttribute('aria-valuenow', 100);
-        P.importProgressDetail.textContent = `${result.imported} / ${rows.length} records written...`;
+        P.importProgressDetail.textContent = `${result.imported} / ${rows.length} ta yozuv yozildi...`;
 
         Cache.invalidate('parts:all');
         Cache.invalidate(`parts:bySupplier:${P.activeSupplierId}`);
 
-        UI.showToast(`Successfully imported ${result.imported} delivery records!`);
+        UI.showToast(`${result.imported} ta yetkazib berish yozuvi muvaffaqiyatli import qilindi!`);
         P.importProgressModal.hide();
 
         await SupplierList.load();
@@ -348,12 +348,12 @@ window.SupplierHistory = (function () {
       } catch (err) {
         console.error(err);
         P.importProgressModal.hide();
-        UI.showToast(`Import failed: ${err.message}`, 'error');
+        UI.showToast(`Import qilishda xatolik: ${err.message}`, 'error');
       }
     };
     reader.onerror = function () {
       P.importProgressModal.hide();
-      UI.showToast('Failed to read CSV file.', 'error');
+      UI.showToast('CSV faylini o\'qishda xatolik.', 'error');
     };
     reader.readAsText(file);
   }
@@ -423,12 +423,12 @@ window.SupplierHistory = (function () {
       if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.add('active');
       try {
         await ReceivingRepository.update(id, updatedData);
-        UI.showToast('Delivery record updated successfully.');
+        UI.showToast('Yetkazib berish yozuvi muvaffaqiyatli yangilandi.');
         P.editRecordModal.hide();
         await load();
       } catch (err) {
         console.error(err);
-        UI.showToast('Failed to update record.', 'error');
+        UI.showToast('Yozuvni yangilashda xatolik yuz berdi.', 'error');
       } finally {
         if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.remove('active');
       }

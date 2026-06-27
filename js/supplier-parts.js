@@ -39,7 +39,7 @@ window.SupplierParts = (function () {
       if (totalEntries === 0) {
         P.partsTableBody.innerHTML = '';
         P.partsEmpty.classList.remove('d-none');
-        P.partsInfoSummary.textContent = 'Showing 0 to 0 of 0 entries';
+        P.partsInfoSummary.textContent = 'Yozuvlar ko\'rsatilmoqda: 0 dan 0 gacha, jami 0 ta';
         P.partsPagination.innerHTML = '';
         P.partsPagerBar.classList.add('d-none');
         return;
@@ -47,7 +47,7 @@ window.SupplierParts = (function () {
 
       P.partsEmpty.classList.add('d-none');
       P.partsPagerBar.classList.remove('d-none');
-      P.partsInfoSummary.textContent = `Showing ${startIndex + 1} to ${endIndex} of ${totalEntries} entries`;
+      P.partsInfoSummary.textContent = `Yozuvlar ko'rsatilmoqda: ${startIndex + 1} dan ${endIndex} gacha, jami ${totalEntries} ta`;
 
       Utils.renderRows(P.partsTableBody, paginated, (part) => {
         const tr = document.createElement('tr');
@@ -59,13 +59,13 @@ window.SupplierParts = (function () {
           <td class="small text-muted">${Utils.escapeHtml(formattedDate)}</td>
           <td class="text-center">
             <div class="btn-group btn-group-sm">
-              <button class="btn btn-outline-secondary btn-edit-part" data-id="${part.id}" title="Edit Name" aria-label="Edit part">
+              <button class="btn btn-outline-secondary btn-edit-part" data-id="${part.id}" title="Nomini tahrirlash" aria-label="Edit part">
                 <i class="bi bi-pencil-square"></i>
               </button>
-              <button class="btn btn-outline-primary btn-transfer-part" data-id="${part.id}" title="Transfer Production Rights" aria-label="Transfer part to another supplier">
+              <button class="btn btn-outline-primary btn-transfer-part" data-id="${part.id}" title="Ishlab chiqarish huquqini o'tkazish" aria-label="Transfer part to another supplier">
                 <i class="bi bi-arrow-left-right"></i>
               </button>
-              <button class="btn btn-outline-danger btn-delete-part" data-id="${part.id}" title="Delete Part" aria-label="Delete part">
+              <button class="btn btn-outline-danger btn-delete-part" data-id="${part.id}" title="Detalni o'chirish" aria-label="Delete part">
                 <i class="bi bi-trash"></i>
               </button>
             </div>
@@ -82,18 +82,18 @@ window.SupplierParts = (function () {
 
         tr.querySelector('.btn-delete-part').addEventListener('click', () => {
           UI.confirm(
-            'Delete Part?',
-            `Remove "${part.detailId} - ${part.detailName}" from this supplier? Incoming registration dropdowns will stop displaying it. Historical logs are untouched.`,
+            'Detalni o\'chirish?',
+            `"${part.detailId} - ${part.detailName}" detalini ushbu yetkazib beruvchidan olib tashlaysizmi? Yangi kiruvchi ro'yxatga olish oynasida u boshqa ko'rsatilmaydi. Tarixiy yozuvlar o'zgarmasdan qoladi.`,
             async () => {
               if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.add('active');
               try {
                 await PartRepository.remove(part.id, P.activeSupplierId);
-                UI.showToast('Part deleted.');
+                UI.showToast('Detal o\'chirildi.');
                 await load();
                 await SupplierList.load();
               } catch (err) {
                 console.error(err);
-                UI.showToast('Failed to delete part.', 'error');
+                UI.showToast('Detalni o\'chirishda xatolik yuz berdi.', 'error');
               } finally {
                 if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.remove('active');
               }
@@ -117,7 +117,7 @@ window.SupplierParts = (function () {
     P.partDetailIdInput.value = part.detailId;
     P.partDetailIdInput.disabled = false;
     P.partDetailNameInput.value = part.detailName;
-    P.partModalLabel.textContent = 'Edit Part Description';
+    P.partModalLabel.textContent = 'Detal tavsifini tahrirlash';
     P.partForm.classList.remove('was-validated');
     P.partModal.show();
   }
@@ -130,10 +130,10 @@ window.SupplierParts = (function () {
       const suppliers = await SupplierRepository.getAll();
       const destinations = suppliers.filter(s => s.id !== P.activeSupplierId);
 
-      P.transferDestinationSelect.innerHTML = '<option value="" selected disabled>Select Destination...</option>';
+      P.transferDestinationSelect.innerHTML = '<option value="" selected disabled>Qabul qiluvchini tanlang...</option>';
 
       if (destinations.length === 0) {
-        UI.showToast('No other suppliers available to transfer to. Create another supplier first.', 'error');
+        UI.showToast('O\'tkazish uchun boshqa yetkazib beruvchilar mavjud emas. Avval boshqa yetkazib beruvchi yarating.', 'error');
         return;
       }
 
@@ -164,7 +164,7 @@ window.SupplierParts = (function () {
       P.partDetailIdInput.value = '';
       P.partDetailIdInput.disabled = false;
       P.partDetailNameInput.value = '';
-      P.partModalLabel.textContent = 'Add Supplier Part';
+      P.partModalLabel.textContent = 'Yetkazib beruvchining detalini qo\'shish';
       P.partForm.classList.remove('was-validated');
       P.partModal.show();
     });
@@ -185,24 +185,24 @@ window.SupplierParts = (function () {
       try {
         if (id) {
           await PartRepository.update(id, P.activeSupplierId, detailId, detailName);
-          UI.showToast('Part details updated.');
+          UI.showToast('Detal tafsilotlari yangilandi.');
         } else {
           const existing = await PartRepository.getBySupplier(P.activeSupplierId);
           if (existing.some(p => p.detailId.toUpperCase() === detailId)) {
-            UI.showToast('This Detail ID already exists for this supplier.', 'error');
+            UI.showToast('Ushbu Detal ID ushbu yetkazib beruvchi uchun allaqachon mavjud.', 'error');
             if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.remove('active');
             return;
           }
           const supplierName = P.detailSupplierName.textContent;
           await PartRepository.add(P.activeSupplierId, detailId, detailName, supplierName);
-          UI.showToast('New part registered.');
+          UI.showToast('Yangi detal ro\'yxatga olindi.');
         }
         P.partModal.hide();
         await load();
         await SupplierList.load();
       } catch (err) {
         console.error(err);
-        UI.showToast('Failed to save part.', 'error');
+        UI.showToast('Detalni saqlashda xatolik yuz berdi.', 'error');
       } finally {
         if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.remove('active');
       }
@@ -223,7 +223,7 @@ window.SupplierParts = (function () {
       if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.add('active');
       try {
         await PartRepository.transfer(partId, P.activeSupplierId, targetSupplierId, targetSupplierName);
-        UI.showToast(`Part successfully transferred to ${targetSupplierName}.`);
+        UI.showToast(`Detal muvaffaqiyatli ravishda ${targetSupplierName} yetkazib beruvchisiga o'tkazildi.`);
 
         P.transferModal.hide();
 
@@ -231,7 +231,7 @@ window.SupplierParts = (function () {
         await SupplierList.load();
       } catch (err) {
         console.error(err);
-        UI.showToast('Transfer failed.', 'error');
+        UI.showToast('O\'tkazishda xatolik yuz berdi.', 'error');
       } finally {
         if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.remove('active');
       }

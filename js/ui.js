@@ -59,8 +59,8 @@ window.UI = {
                 <p class="text-secondary mb-0" id="ui-confirm-body-text">${message}</p>
               </div>
               <div class="modal-footer border-0 pt-0">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" id="ui-confirm-ok-btn">Confirm Delete</button>
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Bekor qilish</button>
+                <button type="button" class="btn btn-danger" id="ui-confirm-ok-btn">Tasdiqlash</button>
               </div>
             </div>
           </div>
@@ -104,7 +104,7 @@ window.UI = {
    *
    * Returns { render(query) } so callers can force a re-render (e.g. on focus).
    */
-  createSearchableDropdown({ inputEl, menuEl, getItems, filterFn, renderItem, onSelect, emptyText = 'No matches' }) {
+  createSearchableDropdown({ inputEl, menuEl, getItems, filterFn, renderItem, onSelect, emptyText = 'Moslik topilmadi' }) {
     function render(query = '') {
       const items = getItems();
       const filtered = items.filter(item => filterFn(item, query));

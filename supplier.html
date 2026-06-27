@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
+<html lang="uz" data-bs-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Supplier Management - Parts Management</title>
+  <title>Yetkazib Beruvchilar - Detallarni Boshqarish</title>
   <!-- Bootstrap 5 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
   <!-- Bootstrap Icons -->
@@ -20,7 +20,7 @@
     <div class="container-fluid px-4">
       <a class="navbar-brand d-flex align-items-center fw-bold text-uppercase" href="index.html">
         <i class="bi bi-gear-fill text-primary me-2"></i>
-        <span>Parts Receiving</span>
+        <span>Detallar Qabul Qilishi</span>
       </a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
@@ -29,22 +29,22 @@
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
           <li class="nav-item">
             <a class="nav-link px-3" href="index.html">
-              <i class="bi bi-journal-plus me-1"></i> Register
+              <i class="bi bi-journal-plus me-1"></i> Qabul qilish
             </a>
           </li>
           <li class="nav-item">
             <a class="nav-link px-3 active" href="supplier.html">
-              <i class="bi bi-building-gear me-1"></i> Suppliers
+              <i class="bi bi-building-gear me-1"></i> Yetkazib beruvchilar
             </a>
           </li>
           <li class="nav-item">
             <a class="nav-link px-3" href="settings.html">
-              <i class="bi bi-sliders2 me-1"></i> Settings
+              <i class="bi bi-sliders2 me-1"></i> Sozlamalar
             </a>
           </li>
         </ul>
         <div class="d-flex align-items-center">
-          <button class="btn btn-outline-secondary btn-sm me-2" id="theme-toggle-btn" title="Toggle Theme">
+          <button class="btn btn-outline-secondary btn-sm me-2" id="theme-toggle-btn" title="Mavzuni o'zgartirish">
             <i class="bi bi-moon-stars-fill"></i>
           </button>
         </div>
@@ -67,11 +67,11 @@
           </div>
           <div class="card-header py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
             <h6 class="card-title mb-0 d-flex align-items-center fw-bold">
-              <i class="bi bi-buildings me-2 text-primary"></i>Suppliers
+              <i class="bi bi-buildings me-2 text-primary"></i>Yetkazib beruvchilar
             </h6>
             <div class="d-flex gap-1">
               <button class="btn btn-primary btn-sm px-2.5" id="btn-add-supplier">
-                <i class="bi bi-plus-lg me-1"></i>Add
+                <i class="bi bi-plus-lg me-1"></i>Qo'shish
               </button>
             </div>
           </div>
@@ -80,7 +80,7 @@
               <span class="premium-search-icon">
                 <i class="bi bi-search"></i>
               </span>
-              <input type="text" class="premium-search-input" id="supplier-search" placeholder="Search suppliers...">
+              <input type="text" class="premium-search-input" id="supplier-search" placeholder="Qidirish...">
             </div>
 
             <!-- List container -->
@@ -90,7 +90,7 @@
             
             <div id="supplier-list-empty" class="text-center py-5 d-none">
               <i class="bi bi-building-dash text-muted fs-2"></i>
-              <p class="text-muted mt-2 small">No suppliers found.</p>
+              <p class="text-muted mt-2 small">Yetkazib beruvchilar topilmadi.</p>
             </div>
           </div>
         </div>
@@ -110,16 +110,16 @@
           <!-- Card Header / Title -->
           <div class="card-header py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
             <div class="text-truncate">
-              <span class="text-muted small text-uppercase fw-semibold">Supplier Dashboard</span>
-              <h4 class="mb-0 fw-bold text-primary text-truncate" id="detail-supplier-name">Select a Supplier</h4>
+              <span class="text-muted small text-uppercase fw-semibold">Yetkazib beruvchi paneli</span>
+              <h4 class="mb-0 fw-bold text-primary text-truncate" id="detail-supplier-name">Yetkazib beruvchini tanlang</h4>
             </div>
             <div class="d-flex gap-2" id="supplier-actions-group">
               <!-- Edit / Delete supplier buttons (visible when a supplier is selected) -->
               <button class="btn btn-outline-secondary btn-sm text-nowrap" id="btn-edit-supplier" disabled>
-                <i class="bi bi-pencil-fill me-1"></i>Rename
+                <i class="bi bi-pencil-fill me-1"></i>Nomini o'zgartirish
               </button>
               <button class="btn btn-outline-danger btn-sm text-nowrap" id="btn-delete-supplier" disabled>
-                <i class="bi bi-trash-fill me-1"></i>Delete
+                <i class="bi bi-trash-fill me-1"></i>O'chirish
               </button>
             </div>
           </div>
@@ -129,17 +129,17 @@
             <ul class="nav nav-tabs border-bottom-0 flex-nowrap" id="supplierTabs" role="tablist">
               <li class="nav-item" role="presentation">
                 <button class="nav-link active py-2.5 text-nowrap" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-tab-pane" type="button" role="tab" aria-controls="history-tab-pane" aria-selected="true">
-                  <i class="bi bi-clock-history me-1"></i>History
+                  <i class="bi bi-clock-history me-1"></i>Tarix
                 </button>
               </li>
               <li class="nav-item" role="presentation">
                 <button class="nav-link py-2.5 text-nowrap" id="parts-tab" data-bs-toggle="tab" data-bs-target="#parts-tab-pane" type="button" role="tab" aria-controls="parts-tab-pane" aria-selected="false">
-                  <i class="bi bi-boxes me-1"></i>Parts List
+                  <i class="bi bi-boxes me-1"></i>Detallar ro'yxati
                 </button>
               </li>
               <li class="nav-item" role="presentation">
                 <button class="nav-link py-2.5 text-nowrap" id="charts-tab" data-bs-toggle="tab" data-bs-target="#charts-tab-pane" type="button" role="tab" aria-controls="charts-tab-pane" aria-selected="false">
-                  <i class="bi bi-bar-chart-line me-1"></i>Reports & Stats
+                  <i class="bi bi-bar-chart-line me-1"></i>Hisobotlar va Statistika
                 </button>
               </li>
             </ul>
@@ -150,9 +150,9 @@
             
             <!-- TAB 1: History -->
             <div class="tab-pane fade show active" id="history-tab-pane" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
-              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+              <div class="d-flex flex-wrap flex-sm-nowrap justify-content-between align-items-center gap-2 mb-3">
                 <h6 class="fw-bold mb-0">
-                  <span>Delivery History</span>
+                  <span>Yetkazib berish tarixi</span>
                   <span class="text-secondary fw-normal ms-1" id="history-recs-count" style="font-size: 0.9rem;"></span>
                 </h6>
                 <div class="d-flex flex-wrap flex-sm-nowrap gap-2 toolbar-actions">
@@ -160,10 +160,10 @@
                     <span class="premium-search-icon">
                       <i class="bi bi-search"></i>
                     </span>
-                    <input type="text" class="premium-search-input" id="history-search" placeholder="Search history...">
+                    <input type="text" class="premium-search-input" id="history-search" placeholder="Qidirish...">
                   </div>
                   <button class="btn btn-outline-primary btn-sm text-nowrap" id="btn-import-csv">
-                    <i class="bi bi-filetype-csv me-1"></i>Import CSV
+                    <i class="bi bi-filetype-csv me-1"></i>CSV'dan import qilish
                   </button>
                   <input type="file" id="csv-file-input" accept=".csv" class="d-none">
                 </div>
@@ -173,15 +173,15 @@
                 <table class="table table-hover align-middle" id="history-table">
                   <thead>
                     <tr>
-                      <th scope="col" class="sortable-header" data-sort="fn">F/N (PO)</th>
-                      <th scope="col" class="sortable-header" data-sort="detailId">Detail ID</th>
-                      <th scope="col" class="sortable-header text-end" data-sort="quantity">Qty</th>
-                      <th scope="col" class="sortable-header text-end" data-sort="checkedQuantity">Checked</th>
-                      <th scope="col" class="sortable-header text-end" data-sort="returnedQuantity">Returned</th>
-                      <th scope="col" class="sortable-header" data-sort="inspectorName">Inspector</th>
-                      <th scope="col">Comment</th>
-                      <th scope="col" class="text-center">Action</th>
-                    </tr>
+                    <th scope="col" class="sortable-header" data-sort="fn">F/N (Buyurtma)</th>
+                    <th scope="col" class="sortable-header" data-sort="detailId">Detal ID</th>
+                    <th scope="col" class="sortable-header text-end" data-sort="quantity">Miqdor</th>
+                    <th scope="col" class="sortable-header text-end" data-sort="checkedQuantity">Tekshirildi</th>
+                    <th scope="col" class="sortable-header text-end" data-sort="returnedQuantity">Qaytarildi</th>
+                    <th scope="col" class="sortable-header" data-sort="inspectorName">Inspektor</th>
+                    <th scope="col">Izoh</th>
+                    <th scope="col" class="text-center">Harakat</th>
+                  </tr>
                   </thead>
                   <tbody id="history-table-body">
                     <!-- Loaded dynamically -->
@@ -189,13 +189,13 @@
                 </table>
                 <div id="history-empty" class="text-center py-5 d-none">
                   <i class="bi bi-receipt text-muted fs-3"></i>
-                  <p class="text-muted mt-2 small">No delivery history recorded for this supplier.</p>
+                  <p class="text-muted mt-2 small">Ushbu yetkazib beruvchi uchun yetkazib berish tarixi topilmadi.</p>
                 </div>
               </div>
 
               <!-- Pagination -->
               <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3" id="history-pager-bar">
-                <span class="small text-muted" id="history-info-summary">Showing 0 to 0 of 0 entries</span>
+                <span class="small text-muted" id="history-info-summary">Yozuvlar ko'rsatilmoqda: 0 dan 0 gacha, jami 0 ta</span>
                 <nav>
                   <ul class="pagination pagination-sm mb-0" id="history-pagination"></ul>
                 </nav>
@@ -211,10 +211,10 @@
                     <span class="premium-search-icon">
                       <i class="bi bi-search"></i>
                     </span>
-                    <input type="text" class="premium-search-input" id="parts-search" placeholder="Search parts...">
+                    <input type="text" class="premium-search-input" id="parts-search" placeholder="Qidirish...">
                   </div>
                   <button class="btn btn-success btn-sm text-nowrap" id="btn-add-part">
-                    <i class="bi bi-plus-lg me-1"></i>Add New Part
+                    <i class="bi bi-plus-lg me-1"></i>Yangi detal qo'shish
                   </button>
                 </div>
               </div>
@@ -223,11 +223,11 @@
                 <table class="table table-hover align-middle" id="parts-table">
                   <thead>
                     <tr>
-                      <th scope="col" class="sortable-header" data-sort="detailId">Detail ID</th>
-                      <th scope="col" class="sortable-header" data-sort="detailName">Detail Name</th>
-                      <th scope="col" class="sortable-header" data-sort="createdAt">Created Date</th>
-                      <th scope="col" class="text-center col-actions">Actions</th>
-                    </tr>
+                    <th scope="col" class="sortable-header" data-sort="detailId">Detal ID</th>
+                    <th scope="col" class="sortable-header" data-sort="detailName">Detal nomi</th>
+                    <th scope="col" class="sortable-header" data-sort="createdAt">Yaratilgan sana</th>
+                    <th scope="col" class="text-center col-actions">Harakatlar</th>
+                  </tr>
                   </thead>
                   <tbody id="parts-table-body">
                     <!-- Loaded dynamically -->
@@ -235,13 +235,13 @@
                 </table>
                 <div id="parts-empty" class="text-center py-5 d-none">
                   <i class="bi bi-boxes text-muted fs-3"></i>
-                  <p class="text-muted mt-2 small">No parts registered for this supplier.</p>
+                  <p class="text-muted mt-2 small">Ushbu yetkazib beruvchi uchun detallar ro'yxatdan o'tkazilmagan.</p>
                 </div>
               </div>
 
               <!-- Pagination -->
               <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3" id="parts-pager-bar">
-                <span class="small text-muted" id="parts-info-summary">Showing 0 to 0 of 0 entries</span>
+                <span class="small text-muted" id="parts-info-summary">Yozuvlar ko'rsatilmoqda: 0 dan 0 gacha, jami 0 ta</span>
                 <nav>
                   <ul class="pagination pagination-sm mb-0" id="parts-pagination"></ul>
                 </nav>
@@ -253,27 +253,27 @@
               <!-- Filter Selectors -->
               <div class="d-flex flex-wrap align-items-center gap-2 mb-4 bg-body-secondary p-3 rounded-3 border">
                 <div class="d-flex align-items-center gap-1.5 chart-filter-group">
-                  <label for="chart-year" class="small fw-semibold text-muted text-nowrap me-1">Year:</label>
+                  <label for="chart-year" class="small fw-semibold text-muted text-nowrap me-1">Yil:</label>
                   <select class="form-select form-select-sm chart-filter-select" id="chart-year">
                     <!-- Auto-populated years -->
                   </select>
                 </div>
                 <div class="d-flex align-items-center gap-1.5 chart-filter-group">
-                  <label for="chart-month" class="small fw-semibold text-muted text-nowrap me-1">Month Details:</label>
+                  <label for="chart-month" class="small fw-semibold text-muted text-nowrap me-1">Oy tafsilotlari:</label>
                   <select class="form-select form-select-sm chart-filter-select" id="chart-month">
-                    <option value="all" selected>All Months</option>
-                    <option value="0">January</option>
-                    <option value="1">February</option>
-                    <option value="2">March</option>
-                    <option value="3">April</option>
+                    <option value="all" selected>Barcha oylar</option>
+                    <option value="0">Yanvar</option>
+                    <option value="1">Fevral</option>
+                    <option value="2">Mart</option>
+                    <option value="3">Aprel</option>
                     <option value="4">May</option>
-                    <option value="5">June</option>
-                    <option value="6">July</option>
-                    <option value="7">August</option>
-                    <option value="8">September</option>
-                    <option value="9">October</option>
-                    <option value="10">November</option>
-                    <option value="11">December</option>
+                    <option value="5">Iyun</option>
+                    <option value="6">Iyul</option>
+                    <option value="7">Avgust</option>
+                    <option value="8">Sentyabr</option>
+                    <option value="9">Oktyabr</option>
+                    <option value="10">Noyabr</option>
+                    <option value="11">Dekabr</option>
                   </select>
                 </div>
               </div>
@@ -282,7 +282,7 @@
                 <div class="col-lg-6">
                   <div class="card p-3 shadow-sm border border-light-subtle h-100">
                     <h6 class="fw-bold mb-3 d-flex align-items-center">
-                      <i class="bi bi-bar-chart-fill text-primary me-2"></i>Incoming Quantity
+                       <i class="bi bi-bar-chart-fill text-primary me-2"></i>Kelib tushgan miqdor
                     </h6>
                     <div class="chart-container">
                       <canvas id="incomingChart"></canvas>
@@ -292,7 +292,7 @@
                 <div class="col-lg-6">
                   <div class="card p-3 shadow-sm border border-light-subtle h-100">
                     <h6 class="fw-bold mb-3 d-flex align-items-center">
-                      <i class="bi bi-graph-up-arrow text-danger me-2"></i>Returned Quantity
+                      <i class="bi bi-graph-up-arrow text-danger me-2"></i>Qaytarilgan miqdor
                     </h6>
                     <div class="chart-container">
                       <canvas id="returnedChart"></canvas>
@@ -317,20 +317,20 @@
       <div class="modal-content border-0 shadow-lg">
         <form id="supplier-form" novalidate>
           <div class="modal-header">
-            <h5 class="modal-title fw-bold" id="supplierModalLabel">Add New Supplier</h5>
+            <h5 class="modal-title fw-bold" id="supplierModalLabel">Yangi yetkazib beruvchi qo'shish</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
             <input type="hidden" id="edit-supplier-id">
             <div class="mb-3">
-              <label for="supplier-name-input" class="form-label small fw-semibold">Supplier Company Name</label>
-              <input type="text" class="form-control" id="supplier-name-input" placeholder="e.g. Apex Industrial Ltd." required>
-              <div class="invalid-feedback">Company name is required.</div>
+              <label for="supplier-name-input" class="form-label small fw-semibold">Yetkazib beruvchi kompaniya nomi</label>
+              <input type="text" class="form-control" id="supplier-name-input" placeholder="Masalan, Apex Industrial MChJ" required>
+              <div class="invalid-feedback">Kompaniya nomi kiritilishi shart.</div>
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary" id="btn-save-supplier-submit">Save Supplier</button>
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Bekor qilish</button>
+            <button type="submit" class="btn btn-primary" id="btn-save-supplier-submit">Saqlash</button>
           </div>
         </form>
       </div>
@@ -343,25 +343,25 @@
       <div class="modal-content border-0 shadow-lg">
         <form id="part-form" novalidate>
           <div class="modal-header">
-            <h5 class="modal-title fw-bold" id="partModalLabel">Add Supplier Part</h5>
+            <h5 class="modal-title fw-bold" id="partModalLabel">Yetkazib beruvchining detalini qo'shish</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
             <input type="hidden" id="edit-part-id">
             <div class="mb-3">
-              <label for="part-detail-id-input" class="form-label small fw-semibold">Detail ID (Part Number)</label>
-              <input type="text" class="form-control" id="part-detail-id-input" placeholder="e.g. PN-1002" required>
-              <div class="invalid-feedback">Valid Detail ID is required.</div>
+              <label for="part-detail-id-input" class="form-label small fw-semibold">Detal ID (Partiya raqami)</label>
+              <input type="text" class="form-control" id="part-detail-id-input" placeholder="Masalan, PN-1002" required>
+              <div class="invalid-feedback">To'g'ri Detal ID kiritilishi shart.</div>
             </div>
             <div class="mb-3">
-              <label for="part-detail-name-input" class="form-label small fw-semibold">Detail Name (Description)</label>
-              <input type="text" class="form-control" id="part-detail-name-input" placeholder="e.g. Hydraulic Valve M10" required>
-              <div class="invalid-feedback">Detail description is required.</div>
+              <label for="part-detail-name-input" class="form-label small fw-semibold">Detal nomi (Tavsifi)</label>
+              <input type="text" class="form-control" id="part-detail-name-input" placeholder="Masalan, Gidravlik klapan M10" required>
+              <div class="invalid-feedback">Detal tavsifi kiritilishi shart.</div>
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary" id="btn-save-part-submit">Save Part</button>
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Bekor qilish</button>
+            <button type="submit" class="btn btn-primary" id="btn-save-part-submit">Saqlash</button>
           </div>
         </form>
       </div>
@@ -375,26 +375,26 @@
         <form id="transfer-form" novalidate>
           <div class="modal-header">
             <h5 class="modal-title fw-bold text-primary" id="transferModalLabel">
-              <i class="bi bi-arrow-left-right me-2"></i>Transfer Production Rights
+              <i class="bi bi-arrow-left-right me-2"></i>Ishlab chiqarish huquqini o'tkazish
             </h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
             <input type="hidden" id="transfer-part-id">
             <p class="small text-secondary mb-3">
-              You are transferring part <strong id="transfer-part-display" class="text-dark"></strong> to another supplier. Future receipts of this Part Number will belong to the destination supplier. Historical delivery records will remain associated with the original supplier.
+              Siz <strong id="transfer-part-display" class="text-dark"></strong> detalini boshqa yetkazib beruvchiga o'tkazmoqdasiz. Ushbu partiya raqamining kelgusi qabullari qabul qiluvchi yetkazib beruvchiga tegishli bo'ladi. Oldingi yetkazib berish yozuvlari esa asl yetkazib beruvchida qoladi.
             </p>
             <div class="mb-3">
-              <label for="transfer-destination-select" class="form-label small fw-semibold">Destination Supplier</label>
+              <label for="transfer-destination-select" class="form-label small fw-semibold">Qabul qiluvchi yetkazib beruvchi</label>
               <select class="form-select" id="transfer-destination-select" required>
-                <option value="" selected disabled>Select Destination...</option>
+                <option value="" selected disabled>Qabul qiluvchini tanlang...</option>
               </select>
-              <div class="invalid-feedback">Please select a destination supplier.</div>
+              <div class="invalid-feedback">Iltimos, qabul qiluvchi yetkazib beruvchini tanlang.</div>
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary">Confirm Transfer</button>
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Bekor qilish</button>
+            <button type="submit" class="btn btn-primary">O'tkazishni tasdiqlash</button>
           </div>
         </form>
       </div>
@@ -408,7 +408,7 @@
         <form id="edit-record-form" novalidate>
           <div class="modal-header">
             <h5 class="modal-title fw-bold text-primary" id="editRecordModalLabel">
-              <i class="bi bi-pencil-square me-2"></i>Edit Delivery Record
+              <i class="bi bi-pencil-square me-2"></i>Yetkazib berish yozuvini tahrirlash
             </h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
@@ -418,64 +418,64 @@
             <!-- Row 1: Date, F/N, Inspector -->
             <div class="row g-3 mb-3">
               <div class="col-12 col-sm-6 col-md-4">
-                <label for="edit-rec-date" class="form-label small fw-semibold">Date</label>
+                <label for="edit-rec-date" class="form-label small fw-semibold">Sana</label>
                 <input type="date" class="form-control" id="edit-rec-date" required>
-                <div class="invalid-feedback">Required.</div>
+                <div class="invalid-feedback">Kiritish majburiy.</div>
               </div>
               <div class="col-12 col-sm-6 col-md-4">
-                <label for="edit-rec-fn" class="form-label small fw-semibold">F/N (PO Number)</label>
+                <label for="edit-rec-fn" class="form-label small fw-semibold">F/N (Buyurtma raqami)</label>
                 <input type="text" class="form-control" id="edit-rec-fn" required>
-                <div class="invalid-feedback">Required.</div>
+                <div class="invalid-feedback">Kiritish majburiy.</div>
               </div>
               <div class="col-12 col-md-4">
-                <label for="edit-rec-inspector" class="form-label small fw-semibold">Inspector</label>
+                <label for="edit-rec-inspector" class="form-label small fw-semibold">Inspektor</label>
                 <select class="form-select" id="edit-rec-inspector" required>
                   <!-- Populated dynamically via JS -->
                 </select>
-                <div class="invalid-feedback">Required.</div>
+                <div class="invalid-feedback">Kiritish majburiy.</div>
               </div>
             </div>
 
             <!-- Row 2: Part selection -->
             <div class="row g-3 mb-3">
               <div class="col-12">
-                <label for="edit-rec-part" class="form-label small fw-semibold">Part Number (Detail ID)</label>
+                <label for="edit-rec-part" class="form-label small fw-semibold">Partiya raqami (Detal ID)</label>
                 <select class="form-select" id="edit-rec-part" required>
                   <!-- Populated dynamically via JS -->
                 </select>
-                <div class="invalid-feedback">Required.</div>
+                <div class="invalid-feedback">Kiritish majburiy.</div>
               </div>
             </div>
 
             <!-- Row 3: Quantities -->
             <div class="row g-3 mb-3">
               <div class="col-6 col-md-4">
-                <label for="edit-rec-qty" class="form-label small fw-semibold">Qty Received</label>
+                <label for="edit-rec-qty" class="form-label small fw-semibold">Qabul qilingan miqdor</label>
                 <input type="number" class="form-control" id="edit-rec-qty" min="1" required>
-                <div class="invalid-feedback">Must be > 0.</div>
+                <div class="invalid-feedback">0 dan katta bo'lishi kerak.</div>
               </div>
               <div class="col-6 col-md-4">
-                <label for="edit-rec-checked" class="form-label small fw-semibold">Qty Checked</label>
+                <label for="edit-rec-checked" class="form-label small fw-semibold">Tekshirilgan miqdor</label>
                 <input type="number" class="form-control" id="edit-rec-checked" min="0" required>
-                <div class="invalid-feedback">Cannot exceed Qty Received.</div>
+                <div class="invalid-feedback">Qabul qilingan miqdordan oshmasligi kerak.</div>
               </div>
               <div class="col-12 col-md-4">
-                <label for="edit-rec-returned" class="form-label small fw-semibold">Qty Returned</label>
+                <label for="edit-rec-returned" class="form-label small fw-semibold">Qaytarilgan miqdor</label>
                 <input type="number" class="form-control" id="edit-rec-returned" min="0" required>
-                <div class="invalid-feedback">Cannot exceed Qty Checked.</div>
+                <div class="invalid-feedback">Tekshirilgan miqdordan oshmasligi kerak.</div>
               </div>
             </div>
 
             <!-- Row 4: Comment -->
             <div class="mb-3">
-              <label for="edit-rec-comment" class="form-label small fw-semibold">Comments</label>
+              <label for="edit-rec-comment" class="form-label small fw-semibold">Izohlar</label>
               <input type="text" class="form-control" id="edit-rec-comment">
             </div>
 
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Bekor qilish</button>
+            <button type="submit" class="btn btn-primary">O'zgarishlarni saqlash</button>
           </div>
         </form>
       </div>
@@ -488,18 +488,18 @@
       <div class="modal-content border-0 shadow-lg">
         <div class="modal-header bg-light">
           <h5 class="modal-title fw-bold text-primary" id="importProgressModalLabel">
-            <i class="bi bi-upload me-2"></i>Importing CSV Data
+            <i class="bi bi-upload me-2"></i>CSV ma'lumotlarini import qilish
           </h5>
         </div>
         <div class="modal-body text-center py-4">
           <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
-            <span class="visually-hidden">Loading...</span>
+            <span class="visually-hidden">Yuklanmoqda...</span>
           </div>
-          <h6 class="fw-bold mb-2" id="import-progress-status">Parsing CSV file...</h6>
+          <h6 class="fw-bold mb-2" id="import-progress-status">CSV fayli tahlil qilinmoqda...</h6>
           <div class="progress mt-3" style="height: 10px;">
             <div class="progress-bar progress-bar-striped progress-bar-animated" id="import-progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
           </div>
-          <p class="text-muted small mt-2 mb-0" id="import-progress-detail">Initializing...</p>
+          <p class="text-muted small mt-2 mb-0" id="import-progress-detail">Boshlanmoqda...</p>
         </div>
       </div>
     </div>

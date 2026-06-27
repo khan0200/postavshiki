@@ -48,7 +48,7 @@ window.SupplierList = (function () {
           </div>
           <div class="d-flex gap-2 mt-2">
             <span class="badge badge-parts small rounded-pill">
-              <i class="bi bi-box me-1"></i>${supPartsCount} Parts
+              <i class="bi bi-box me-1"></i>${supPartsCount} ta detal
             </span>
           </div>
         `;
@@ -94,14 +94,14 @@ window.SupplierList = (function () {
 
   function updateDetailCardState() {
     if (!P.activeSupplierId) {
-      P.detailSupplierName.textContent = 'Select a Supplier';
+      P.detailSupplierName.textContent = 'Yetkazib beruvchini tanlang';
       P.btnEditSupplier.disabled = true;
       P.btnDeleteSupplier.disabled = true;
       if (P.btnImportCsv) P.btnImportCsv.disabled = true;
       if (P.historyRecsCount) P.historyRecsCount.textContent = '';
 
-      P.historyTableBody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">Select a supplier from directory</td></tr>';
-      P.partsTableBody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">Select a supplier from directory</td></tr>';
+      P.historyTableBody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">Katalogdan yetkazib beruvchini tanlang</td></tr>';
+      P.partsTableBody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">Katalogdan yetkazib beruvchini tanlang</td></tr>';
       P.historyPagerBar.classList.add('d-none');
       P.partsPagerBar.classList.add('d-none');
 
@@ -129,7 +129,7 @@ window.SupplierList = (function () {
     P.btnAddSupplier.addEventListener('click', () => {
       P.editSupplierIdInput.value = '';
       P.supplierNameInput.value = '';
-      P.supplierModalLabel.textContent = 'Add New Supplier';
+      P.supplierModalLabel.textContent = 'Yangi yetkazib beruvchi qo\'shish';
       P.supplierForm.classList.remove('was-validated');
       P.supplierModal.show();
     });
@@ -140,7 +140,7 @@ window.SupplierList = (function () {
         if (sup) {
           P.editSupplierIdInput.value = sup.id;
           P.supplierNameInput.value = sup.name;
-          P.supplierModalLabel.textContent = 'Rename Supplier';
+          P.supplierModalLabel.textContent = 'Nomini o\'zgartirish';
           P.supplierForm.classList.remove('was-validated');
           P.supplierModal.show();
         }
@@ -164,19 +164,19 @@ window.SupplierList = (function () {
       try {
         if (id) {
           await SupplierRepository.rename(id, name);
-          UI.showToast('Supplier renamed successfully.');
+          UI.showToast('Yetkazib beruvchi nomi muvaffaqiyatli o\'zgartirildi.');
           await load();
           await selectSupplier(id);
         } else {
           const newSup = await SupplierRepository.add(name);
-          UI.showToast('Supplier registered.');
+          UI.showToast('Yetkazib beruvchi ro\'yxatga olindi.');
           await load();
           await selectSupplier(newSup.id);
         }
         P.supplierModal.hide();
       } catch (err) {
         console.error(err);
-        UI.showToast('Failed to save supplier.', 'error');
+        UI.showToast('Yetkazib beruvchini saqlashda xatolik yuz berdi.', 'error');
       } finally {
         if (P.supplierListSpinner) P.supplierListSpinner.classList.remove('active');
       }
@@ -188,14 +188,14 @@ window.SupplierList = (function () {
         if (!sup) return;
 
         UI.confirm(
-          'Delete Supplier?',
-          `Delete "${sup.name}"? This removes all active parts associated with this supplier. Historical logs will be preserved.`,
+          'Yetkazib beruvchini o\'chirish?',
+          `"${sup.name}" yetkazib beruvchisini o'chirasizmi? Bu ushbu yetkazib beruvchi bilan bog'liq barcha faol detallarni o'chirib tashlaydi. Tarixiy yozuvlar saqlab qolinadi.`,
           async () => {
             if (P.supplierListSpinner) P.supplierListSpinner.classList.add('active');
             if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.add('active');
             try {
               await SupplierRepository.remove(P.activeSupplierId);
-              UI.showToast('Supplier deleted.');
+              UI.showToast('Yetkazib beruvchi o\'chirildi.');
 
               P.activeSupplierId = null;
 
@@ -203,7 +203,7 @@ window.SupplierList = (function () {
               updateDetailCardState();
             } catch (err) {
               console.error(err);
-              UI.showToast('Failed to delete supplier.', 'error');
+              UI.showToast('Yetkazib beruvchini o\'chirishda xatolik yuz berdi.', 'error');
             } finally {
               if (P.supplierListSpinner) P.supplierListSpinner.classList.remove('active');
               if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.remove('active');

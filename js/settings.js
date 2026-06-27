@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const inspectors = await InspectorRepository.getAll();
 
       if (inspectors.length === 0) {
-        inspectorsTableBody.innerHTML = '<tr><td colspan="2" class="text-center py-4 text-muted">No inspectors registered.</td></tr>';
+        inspectorsTableBody.innerHTML = '<tr><td colspan="2" class="text-center py-4 text-muted">Inspektorlar ro\'yxatdan o\'tkazilmagan.</td></tr>';
         return;
       }
 
@@ -79,10 +79,10 @@ document.addEventListener('DOMContentLoaded', () => {
           <td class="fw-semibold">${Utils.escapeHtml(ins.fullName)}</td>
           <td class="text-center">
             <div class="btn-group btn-group-sm">
-              <button class="btn btn-outline-secondary edit-ins-btn" data-id="${ins.id}" title="Rename" aria-label="Rename inspector">
+              <button class="btn btn-outline-secondary edit-ins-btn" data-id="${ins.id}" title="Nomini o'zgartirish" aria-label="Rename inspector">
                 <i class="bi bi-pencil-square"></i>
               </button>
-              <button class="btn btn-outline-danger delete-ins-btn" data-id="${ins.id}" title="Delete" aria-label="Delete inspector">
+              <button class="btn btn-outline-danger delete-ins-btn" data-id="${ins.id}" title="O'chirish" aria-label="Delete inspector">
                 <i class="bi bi-trash"></i>
               </button>
             </div>
@@ -95,17 +95,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         tr.querySelector('.delete-ins-btn').addEventListener('click', () => {
           UI.confirm(
-            'Delete Inspector?',
-            `Remove "${ins.fullName}" from the inspector list? Past receiving records will preserve this inspector name for audit purposes.`,
+            'Inspektorni o\'chirish?',
+            `"${ins.fullName}" inspektorini ro'yxatdan olib tashlaysizmi? Oldingi qabul qilish yozuvlaridagi inspektor nomi audit maqsadida saqlab qolinadi.`,
             async () => {
               if (inspectorsSpinner) inspectorsSpinner.classList.add('active');
               try {
                 await InspectorRepository.remove(ins.id);
-                UI.showToast('Inspector removed.');
+                UI.showToast('Inspektor o\'chirildi.');
                 await loadInspectorsTable();
               } catch (err) {
                 console.error(err);
-                UI.showToast('Failed to delete inspector.', 'error');
+                UI.showToast('Inspektorni o\'chirishda xatolik yuz berdi.', 'error');
               } finally {
                 if (inspectorsSpinner) inspectorsSpinner.classList.remove('active');
               }
@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
   btnAddInspector.addEventListener('click', () => {
     editInspectorIdInput.value = '';
     inspectorNameInput.value = '';
-    inspectorModalLabel.textContent = 'Add Inspector';
+    inspectorModalLabel.textContent = 'Inspektor qo\'shish';
     inspectorForm.classList.remove('was-validated');
     inspectorModal.show();
   });
@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function openInspectorModalForEdit(ins) {
     editInspectorIdInput.value = ins.id;
     inspectorNameInput.value = ins.fullName;
-    inspectorModalLabel.textContent = 'Edit Inspector Details';
+    inspectorModalLabel.textContent = 'Inspektor tafsilotlarini tahrirlash';
     inspectorForm.classList.remove('was-validated');
     inspectorModal.show();
   }
@@ -153,17 +153,17 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       if (id) {
         await InspectorRepository.update(id, name);
-        UI.showToast('Inspector details updated.');
+        UI.showToast('Inspektor tafsilotlari yangilandi.');
       } else {
         await InspectorRepository.add(name);
-        UI.showToast('Inspector added successfully.');
+        UI.showToast('Inspektor muvaffaqiyatli qo\'shildi.');
       }
 
       inspectorModal.hide();
       await loadInspectorsTable();
     } catch (err) {
       console.error(err);
-      UI.showToast('Failed to save inspector.', 'error');
+      UI.showToast('Inspektorni saqlashda xatolik yuz berdi.', 'error');
     } finally {
       if (inspectorsSpinner) inspectorsSpinner.classList.remove('active');
     }
@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const comments = await CommentRepository.getAll();
 
       if (comments.length === 0) {
-        commentsTableBody.innerHTML = '<tr><td colspan="2" class="text-center py-4 text-muted">No comment presets defined.</td></tr>';
+        commentsTableBody.innerHTML = '<tr><td colspan="2" class="text-center py-4 text-muted">Tayyor izohlar mavjud emas.</td></tr>';
         return;
       }
 
@@ -187,10 +187,10 @@ document.addEventListener('DOMContentLoaded', () => {
           <td class="font-monospace">${Utils.escapeHtml(cmt.text)}</td>
           <td class="text-center">
             <div class="btn-group btn-group-sm">
-              <button class="btn btn-outline-secondary edit-cmt-btn" data-id="${cmt.id}" title="Rename" aria-label="Rename comment preset">
+              <button class="btn btn-outline-secondary edit-cmt-btn" data-id="${cmt.id}" title="Nomini o'zgartirish" aria-label="Rename comment preset">
                 <i class="bi bi-pencil-square"></i>
               </button>
-              <button class="btn btn-outline-danger delete-cmt-btn" data-id="${cmt.id}" title="Delete" aria-label="Delete comment preset">
+              <button class="btn btn-outline-danger delete-cmt-btn" data-id="${cmt.id}" title="O'chirish" aria-label="Delete comment preset">
                 <i class="bi bi-trash"></i>
               </button>
             </div>
@@ -203,17 +203,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         tr.querySelector('.delete-cmt-btn').addEventListener('click', () => {
           UI.confirm(
-            'Delete Comment Preset?',
-            `Remove "${cmt.text}" from the quick-select list? This will not affect any registered receiving records.`,
+            'Tayyor izohni o\'chirish?',
+            `"${cmt.text}" izohini ro'yxatdan olib tashlaysizmi? Bu ro'yxatdan o'tgan qabul qilish yozuvlariga ta'sir qilmaydi.`,
             async () => {
               if (commentsSpinner) commentsSpinner.classList.add('active');
               try {
                 await CommentRepository.remove(cmt.id);
-                UI.showToast('Comment preset removed.');
+                UI.showToast('Tayyor izoh o\'chirildi.');
                 await loadCommentsTable();
               } catch (err) {
                 console.error(err);
-                UI.showToast('Failed to delete comment preset.', 'error');
+                UI.showToast('Tayyor izohni o\'chirishda xatolik yuz berdi.', 'error');
               } finally {
                 if (commentsSpinner) commentsSpinner.classList.remove('active');
               }
@@ -233,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
   btnAddComment.addEventListener('click', () => {
     editCommentIdInput.value = '';
     commentTextInput.value = '';
-    commentModalLabel.textContent = 'Add Comment Preset';
+    commentModalLabel.textContent = 'Tayyor izoh qo\'shish';
     commentForm.classList.remove('was-validated');
     commentModal.show();
   });
@@ -241,7 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function openCommentModalForEdit(cmt) {
     editCommentIdInput.value = cmt.id;
     commentTextInput.value = cmt.text;
-    commentModalLabel.textContent = 'Edit Comment Preset';
+    commentModalLabel.textContent = 'Tayyor izohni tahrirlash';
     commentForm.classList.remove('was-validated');
     commentModal.show();
   }
@@ -261,17 +261,17 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       if (id) {
         await CommentRepository.update(id, text);
-        UI.showToast('Comment preset updated.');
+        UI.showToast('Tayyor izoh yangilandi.');
       } else {
         await CommentRepository.add(text);
-        UI.showToast('Comment preset registered.');
+        UI.showToast('Tayyor izoh ro\'yxatga olindi.');
       }
 
       commentModal.hide();
       await loadCommentsTable();
     } catch (err) {
       console.error(err);
-      UI.showToast('Failed to save comment preset.', 'error');
+      UI.showToast('Tayyor izohni saqlashda xatolik yuz berdi.', 'error');
     } finally {
       if (commentsSpinner) commentsSpinner.classList.remove('active');
     }
