@@ -60,7 +60,6 @@ window.UI = {
               </div>
               <div class="modal-body py-3 text-center">
                 <p class="text-secondary text-start mb-3" id="ui-confirm-body-text">${message}</p>
-                <div class="small fw-semibold text-muted text-start mb-2">Parolni hisoblash uchun quyidagi sonni 2 ga ko'paytiring:</div>
                 <div class="fs-2 fw-bold text-primary mb-3" id="ui-confirm-challenge-num">${num}</div>
                 <input type="number" class="form-control text-center mx-auto" id="ui-confirm-pass-input" placeholder="Natijani kiriting..." style="max-width: 200px;">
                 <div class="text-danger small mt-2" id="ui-confirm-error" style="display: none;">Xato parol! Qaytadan urinib ko'ring.</div>
