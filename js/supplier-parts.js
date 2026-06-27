@@ -256,7 +256,6 @@ window.SupplierParts = (function () {
           }
         }
       );
-      }
     });
   }
 
