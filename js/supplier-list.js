@@ -81,6 +81,15 @@ window.SupplierList = (function () {
         P.historyState.currentPage = 1;
         P.partsState.currentPage = 1;
 
+        if (P.historyFilterInspector) {
+          P.historyFilterInspector.innerHTML = '<option value="">Barcha inspektorlar</option>';
+          P.historyFilterInspector.value = '';
+        }
+        if (P.historyFilterPart) {
+          P.historyFilterPart.innerHTML = '<option value="">Barcha detallar</option>';
+          P.historyFilterPart.value = '';
+        }
+
         await P.renderActiveTab();
       }
 

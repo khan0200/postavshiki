@@ -21,6 +21,33 @@ window.SupplierHistory = (function () {
         P.historyRecsCount.textContent = `(${supplierRecords.length} Recs)`;
       }
 
+      // Populate Inspector Filter dropdown if empty
+      if (P.historyFilterInspector && P.historyFilterInspector.options.length <= 1) {
+        const currentVal = P.historyFilterInspector.value;
+        P.historyFilterInspector.innerHTML = '<option value="">Barcha inspektorlar</option>';
+        inspectors.slice().sort((a, b) => a.fullName.localeCompare(b.fullName)).forEach(ins => {
+          const opt = document.createElement('option');
+          opt.value = ins.id;
+          opt.textContent = ins.fullName;
+          P.historyFilterInspector.appendChild(opt);
+        });
+        P.historyFilterInspector.value = currentVal;
+      }
+
+      // Populate Part Filter dropdown if empty
+      if (P.historyFilterPart && P.historyFilterPart.options.length <= 1) {
+        const currentVal = P.historyFilterPart.value;
+        P.historyFilterPart.innerHTML = '<option value="">Barcha detallar</option>';
+        const parts = await PartRepository.getBySupplier(P.activeSupplierId);
+        parts.slice().sort((a, b) => a.detailId.localeCompare(b.detailId)).forEach(part => {
+          const opt = document.createElement('option');
+          opt.value = part.detailId;
+          opt.textContent = `${part.detailId} - ${part.detailName}`;
+          P.historyFilterPart.appendChild(opt);
+        });
+        P.historyFilterPart.value = currentVal;
+      }
+
       const inspectorsById = new Map(inspectors.map(i => [i.id, i.fullName]));
       let records = supplierRecords.map(rec => ({
         ...rec,
@@ -29,6 +56,9 @@ window.SupplierHistory = (function () {
 
       // 1. Filter
       const query = P.historySearchInput.value.toLowerCase().trim();
+      const inspectorFilter = P.historyFilterInspector ? P.historyFilterInspector.value : '';
+      const partFilter = P.historyFilterPart ? P.historyFilterPart.value : '';
+
       if (query) {
         records = records.filter(rec =>
           rec.fn.toLowerCase().includes(query) ||
@@ -36,6 +66,14 @@ window.SupplierHistory = (function () {
           rec.detailName.toLowerCase().includes(query) ||
           rec.inspectorName.toLowerCase().includes(query)
         );
+      }
+
+      if (inspectorFilter) {
+        records = records.filter(rec => rec.inspectorId === inspectorFilter);
+      }
+
+      if (partFilter) {
+        records = records.filter(rec => rec.detailId === partFilter);
       }
 
       // 2. Sort (shared utility - identical behavior to the previous inline comparator)
@@ -363,6 +401,20 @@ window.SupplierHistory = (function () {
       P.historyState.currentPage = 1;
       load();
     }, 250));
+
+    if (P.historyFilterInspector) {
+      P.historyFilterInspector.addEventListener('change', () => {
+        P.historyState.currentPage = 1;
+        load();
+      });
+    }
+
+    if (P.historyFilterPart) {
+      P.historyFilterPart.addEventListener('change', () => {
+        P.historyState.currentPage = 1;
+        load();
+      });
+    }
 
     Utils.bindSortableHeaders('#history-table', P.historyState, load);
 

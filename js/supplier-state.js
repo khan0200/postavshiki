@@ -34,6 +34,8 @@ window.SupplierPage = {
   historyPagination: null,
   historyPagerBar: null,
   historyRecsCount: null,
+  historyFilterInspector: null,
+  historyFilterPart: null,
 
   // --- Tab - Parts ---
   partsSearchInput: null,
@@ -121,6 +123,8 @@ window.SupplierPage = {
     this.historyPagination = document.getElementById('history-pagination');
     this.historyPagerBar = document.getElementById('history-pager-bar');
     this.historyRecsCount = document.getElementById('history-recs-count');
+    this.historyFilterInspector = document.getElementById('history-filter-inspector');
+    this.historyFilterPart = document.getElementById('history-filter-part');
 
     this.partsSearchInput = document.getElementById('parts-search');
     this.partsTableBody = document.getElementById('parts-table-body');
