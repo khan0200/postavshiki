@@ -31,6 +31,13 @@ module.exports = async function handler(req, res) {
     return sendJson(res, 400, { error: 'supplierId, supplierName, and a non-empty rows array are required' });
   }
 
+  // Normalize inspector names to merge short name 'M.Zulfiqorov' into 'MO'MINJON ZULFIQOROV'
+  for (const row of rows) {
+    if (row.inspectorName && row.inspectorName.trim().toLowerCase() === 'm.zulfiqorov') {
+      row.inspectorName = "MO'MINJON ZULFIQOROV";
+    }
+  }
+
   // 1. Resolve inspectors: reuse existing by case-insensitive fullName match, create missing ones.
   const inspectorsResult = await db.execute('SELECT id, fullName FROM inspectors');
   const inspectorMap = new Map(inspectorsResult.rows.map(i => [i.fullName.trim().toLowerCase(), i.id]));
