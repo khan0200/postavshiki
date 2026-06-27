@@ -181,12 +181,29 @@ window.SupplierParts = (function () {
       const detailId = P.partDetailIdInput.value.trim().toUpperCase();
       const detailName = P.partDetailNameInput.value.trim();
 
-      if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.add('active');
-      try {
-        if (id) {
-          await PartRepository.update(id, P.activeSupplierId, detailId, detailName);
-          UI.showToast('Detal tafsilotlari yangilandi.');
-        } else {
+      if (id) {
+        P.partModal.hide();
+        UI.confirm(
+          'Detal tavsifini o\'zgartirish',
+          `Ushbu detal (ID: ${detailId}) tavsifini o'zgartirishni tasdiqlaysizmi?`,
+          async () => {
+            if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.add('active');
+            try {
+              await PartRepository.update(id, P.activeSupplierId, detailId, detailName);
+              UI.showToast('Detal tafsilotlari yangilandi.');
+              await load();
+              await SupplierList.load();
+            } catch (err) {
+              console.error(err);
+              UI.showToast('Detalni saqlashda xatolik yuz berdi.', 'error');
+            } finally {
+              if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.remove('active');
+            }
+          }
+        );
+      } else {
+        if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.add('active');
+        try {
           const existing = await PartRepository.getBySupplier(P.activeSupplierId);
           if (existing.some(p => p.detailId.toUpperCase() === detailId)) {
             UI.showToast('Ushbu Detal ID ushbu yetkazib beruvchi uchun allaqachon mavjud.', 'error');
@@ -196,15 +213,15 @@ window.SupplierParts = (function () {
           const supplierName = P.detailSupplierName.textContent;
           await PartRepository.add(P.activeSupplierId, detailId, detailName, supplierName);
           UI.showToast('Yangi detal ro\'yxatga olindi.');
+          P.partModal.hide();
+          await load();
+          await SupplierList.load();
+        } catch (err) {
+          console.error(err);
+          UI.showToast('Detalni saqlashda xatolik yuz berdi.', 'error');
+        } finally {
+          if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.remove('active');
         }
-        P.partModal.hide();
-        await load();
-        await SupplierList.load();
-      } catch (err) {
-        console.error(err);
-        UI.showToast('Detalni saqlashda xatolik yuz berdi.', 'error');
-      } finally {
-        if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.remove('active');
       }
     });
 
@@ -220,20 +237,25 @@ window.SupplierParts = (function () {
       const targetSupplierId = P.transferDestinationSelect.value;
       const targetSupplierName = P.transferDestinationSelect.options[P.transferDestinationSelect.selectedIndex].text;
 
-      if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.add('active');
-      try {
-        await PartRepository.transfer(partId, P.activeSupplierId, targetSupplierId, targetSupplierName);
-        UI.showToast(`Detal muvaffaqiyatli ravishda ${targetSupplierName} yetkazib beruvchisiga o'tkazildi.`);
-
-        P.transferModal.hide();
-
-        await load();
-        await SupplierList.load();
-      } catch (err) {
-        console.error(err);
-        UI.showToast('O\'tkazishda xatolik yuz berdi.', 'error');
-      } finally {
-        if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.remove('active');
+      P.transferModal.hide();
+      UI.confirm(
+        'Huquqlarni o\'tkazishni tasdiqlash',
+        `Haqiqatan ham ushbu detal ishlab chiqarish huquqini ${targetSupplierName} yetkazib beruvchisiga o'tkazmoqchisiz?`,
+        async () => {
+          if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.add('active');
+          try {
+            await PartRepository.transfer(partId, P.activeSupplierId, targetSupplierId, targetSupplierName);
+            UI.showToast(`Detal muvaffaqiyatli ravishda ${targetSupplierName} yetkazib beruvchisiga o'tkazildi.`);
+            await load();
+            await SupplierList.load();
+          } catch (err) {
+            console.error(err);
+            UI.showToast('O\'tkazishda xatolik yuz berdi.', 'error');
+          } finally {
+            if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.remove('active');
+          }
+        }
+      );
       }
     });
   }

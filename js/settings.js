@@ -152,15 +152,38 @@ document.addEventListener('DOMContentLoaded', () => {
     if (inspectorsSpinner) inspectorsSpinner.classList.add('active');
     try {
       if (id) {
-        await InspectorRepository.update(id, name);
-        UI.showToast('Inspektor tafsilotlari yangilandi.');
+        inspectorModal.hide();
+        UI.confirm(
+          'Inspektor ma\'lumotlarini o\'zgartirish',
+          `Ushbu inspektor (Ismi: ${name}) ma'lumotlarini o'zgartirishni tasdiqlaysizmi?`,
+          async () => {
+            if (inspectorsSpinner) inspectorsSpinner.classList.add('active');
+            try {
+              await InspectorRepository.update(id, name);
+              UI.showToast('Inspektor tafsilotlari yangilandi.');
+              await loadInspectorsTable();
+            } catch (err) {
+              console.error(err);
+              UI.showToast('Inspektorni saqlashda xatolik yuz berdi.', 'error');
+            } finally {
+              if (inspectorsSpinner) inspectorsSpinner.classList.remove('active');
+            }
+          }
+        );
       } else {
-        await InspectorRepository.add(name);
-        UI.showToast('Inspektor muvaffaqiyatli qo\'shildi.');
+        if (inspectorsSpinner) inspectorsSpinner.classList.add('active');
+        try {
+          await InspectorRepository.add(name);
+          UI.showToast('Inspektor muvaffaqiyatli qo\'shildi.');
+          inspectorModal.hide();
+          await loadInspectorsTable();
+        } catch (err) {
+          console.error(err);
+          UI.showToast('Inspektorni saqlashda xatolik yuz berdi.', 'error');
+        } finally {
+          if (inspectorsSpinner) inspectorsSpinner.classList.remove('active');
+        }
       }
-
-      inspectorModal.hide();
-      await loadInspectorsTable();
     } catch (err) {
       console.error(err);
       UI.showToast('Inspektorni saqlashda xatolik yuz berdi.', 'error');
@@ -260,15 +283,38 @@ document.addEventListener('DOMContentLoaded', () => {
     if (commentsSpinner) commentsSpinner.classList.add('active');
     try {
       if (id) {
-        await CommentRepository.update(id, text);
-        UI.showToast('Tayyor izoh yangilandi.');
+        commentModal.hide();
+        UI.confirm(
+          'Tayyor izohni o\'zgartirish',
+          `Ushbu tayyor izoh matnini o'zgartirishni tasdiqlaysizmi?`,
+          async () => {
+            if (commentsSpinner) commentsSpinner.classList.add('active');
+            try {
+              await CommentRepository.update(id, text);
+              UI.showToast('Tayyor izoh yangilandi.');
+              await loadCommentsTable();
+            } catch (err) {
+              console.error(err);
+              UI.showToast('Tayyor izohni saqlashda xatolik yuz berdi.', 'error');
+            } finally {
+              if (commentsSpinner) commentsSpinner.classList.remove('active');
+            }
+          }
+        );
       } else {
-        await CommentRepository.add(text);
-        UI.showToast('Tayyor izoh ro\'yxatga olindi.');
+        if (commentsSpinner) commentsSpinner.classList.add('active');
+        try {
+          await CommentRepository.add(text);
+          UI.showToast('Tayyor izoh ro\'yxatga olindi.');
+          commentModal.hide();
+          await loadCommentsTable();
+        } catch (err) {
+          console.error(err);
+          UI.showToast('Tayyor izohni saqlashda xatolik yuz berdi.', 'error');
+        } finally {
+          if (commentsSpinner) commentsSpinner.classList.remove('active');
+        }
       }
-
-      commentModal.hide();
-      await loadCommentsTable();
     } catch (err) {
       console.error(err);
       UI.showToast('Tayyor izohni saqlashda xatolik yuz berdi.', 'error');

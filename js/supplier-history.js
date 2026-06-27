@@ -472,17 +472,24 @@ window.SupplierHistory = (function () {
         comment: P.editRecComment.value || 'OK'
       };
 
-      if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.add('active');
-      try {
-        await ReceivingRepository.update(id, updatedData);
-        UI.showToast('Yetkazib berish yozuvi muvaffaqiyatli yangilandi.');
-        P.editRecordModal.hide();
-        await load();
-      } catch (err) {
-        console.error(err);
-        UI.showToast('Yozuvni yangilashda xatolik yuz berdi.', 'error');
-      } finally {
-        if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.remove('active');
+      P.editRecordModal.hide();
+      UI.confirm(
+        'Yozuvni tahrirlashni tasdiqlash',
+        `Ushbu yetkazib berish yozuvini (F/N: ${updatedData.fn}) yangilashni tasdiqlaysizmi?`,
+        async () => {
+          if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.add('active');
+          try {
+            await ReceivingRepository.update(id, updatedData);
+            UI.showToast('Yetkazib berish yozuvi muvaffaqiyatli yangilandi.');
+            await load();
+          } catch (err) {
+            console.error(err);
+            UI.showToast('Yozuvni yangilashda xatolik yuz berdi.', 'error');
+          } finally {
+            if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.remove('active');
+          }
+        }
+      );
       }
     });
   }

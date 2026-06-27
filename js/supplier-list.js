@@ -171,18 +171,41 @@ window.SupplierList = (function () {
 
       if (P.supplierListSpinner) P.supplierListSpinner.classList.add('active');
       try {
-        if (id) {
-          await SupplierRepository.rename(id, name);
-          UI.showToast('Yetkazib beruvchi nomi muvaffaqiyatli o\'zgartirildi.');
-          await load();
-          await selectSupplier(id);
-        } else {
+      if (id) {
+        P.supplierModal.hide();
+        UI.confirm(
+          'Nomini o\'zgartirishni tasdiqlash',
+          `Haqiqatan ham yetkazib beruvchi nomini "${name}" ga o'zgartirmoqchisiz?`,
+          async () => {
+            if (P.supplierListSpinner) P.supplierListSpinner.classList.add('active');
+            try {
+              await SupplierRepository.rename(id, name);
+              UI.showToast('Yetkazib beruvchi nomi muvaffaqiyatli o\'zgartirildi.');
+              await load();
+              await selectSupplier(id);
+            } catch (err) {
+              console.error(err);
+              UI.showToast('Yetkazib beruvchini saqlashda xatolik yuz berdi.', 'error');
+            } finally {
+              if (P.supplierListSpinner) P.supplierListSpinner.classList.remove('active');
+            }
+          }
+        );
+      } else {
+        if (P.supplierListSpinner) P.supplierListSpinner.classList.add('active');
+        try {
           const newSup = await SupplierRepository.add(name);
           UI.showToast('Yetkazib beruvchi ro\'yxatga olindi.');
           await load();
           await selectSupplier(newSup.id);
+          P.supplierModal.hide();
+        } catch (err) {
+          console.error(err);
+          UI.showToast('Yetkazib beruvchini saqlashda xatolik yuz berdi.', 'error');
+        } finally {
+          if (P.supplierListSpinner) P.supplierListSpinner.classList.remove('active');
         }
-        P.supplierModal.hide();
+      }
       } catch (err) {
         console.error(err);
         UI.showToast('Yetkazib beruvchini saqlashda xatolik yuz berdi.', 'error');

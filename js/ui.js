@@ -43,20 +43,27 @@ window.UI = {
   // Custom confirmation dialog before deletion
   confirm(title, message, onConfirm) {
     let modalElem = document.getElementById('ui-confirm-modal');
+    const num = Math.floor(Math.random() * 50) + 1;
+    const ans = num * 2;
+
     if (!modalElem) {
       const html = `
-        <div class="modal fade" id="ui-confirm-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal fade" id="ui-confirm-modal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
               <div class="modal-header border-0 pb-0">
                 <h5 class="modal-title d-flex align-items-center text-danger fw-bold">
-                  <i class="bi bi-exclamation-triangle-fill me-2 fs-4"></i>
+                  <i class="bi bi-shield-lock-fill me-2 fs-4"></i>
                   ${title}
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
-              <div class="modal-body py-3">
-                <p class="text-secondary mb-0" id="ui-confirm-body-text">${message}</p>
+              <div class="modal-body py-3 text-center">
+                <p class="text-secondary text-start mb-3" id="ui-confirm-body-text">${message}</p>
+                <div class="small fw-semibold text-muted text-start mb-2">Parolni hisoblash uchun quyidagi sonni 2 ga ko'paytiring:</div>
+                <div class="fs-2 fw-bold text-primary mb-3" id="ui-confirm-challenge-num">${num}</div>
+                <input type="number" class="form-control text-center mx-auto" id="ui-confirm-pass-input" placeholder="Natijani kiriting..." style="max-width: 200px;">
+                <div class="text-danger small mt-2" id="ui-confirm-error" style="display: none;">Xato parol! Qaytadan urinib ko'ring.</div>
               </div>
               <div class="modal-footer border-0 pt-0">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Bekor qilish</button>
@@ -70,19 +77,34 @@ window.UI = {
       modalElem = document.getElementById('ui-confirm-modal');
     } else {
       document.getElementById('ui-confirm-body-text').innerText = message;
-      modalElem.querySelector('.modal-title').innerHTML = `<i class="bi bi-exclamation-triangle-fill me-2 fs-4"></i> ${title}`;
+      modalElem.querySelector('.modal-title').innerHTML = `<i class="bi bi-shield-lock-fill me-2 fs-4"></i> ${title}`;
+      document.getElementById('ui-confirm-challenge-num').textContent = num;
+      document.getElementById('ui-confirm-pass-input').value = '';
+      document.getElementById('ui-confirm-error').style.display = 'none';
     }
     
     const bsModal = new bootstrap.Modal(modalElem);
     const okBtn = document.getElementById('ui-confirm-ok-btn');
+    const passInput = document.getElementById('ui-confirm-pass-input');
+    const errorDiv = document.getElementById('ui-confirm-error');
+    
+    passInput.addEventListener('input', () => {
+      errorDiv.style.display = 'none';
+    });
     
     // Remove previous listeners by cloning the button
     const newOkBtn = okBtn.cloneNode(true);
     okBtn.parentNode.replaceChild(newOkBtn, okBtn);
     
     newOkBtn.addEventListener('click', () => {
-      onConfirm();
-      bsModal.hide();
+      if (parseInt(passInput.value) === ans) {
+        onConfirm();
+        bsModal.hide();
+      } else {
+        errorDiv.style.display = 'block';
+        passInput.value = '';
+        passInput.focus();
+      }
     });
     
     bsModal.show();
