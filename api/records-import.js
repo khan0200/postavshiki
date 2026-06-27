@@ -32,9 +32,15 @@ module.exports = async function handler(req, res) {
   }
 
   // Normalize inspector names to merge short name 'M.Zulfiqorov' into 'MO'MINJON ZULFIQOROV'
+  // and 'Unknown' into 'DILSHODBEK ISROILOV'
   for (const row of rows) {
-    if (row.inspectorName && row.inspectorName.trim().toLowerCase() === 'm.zulfiqorov') {
-      row.inspectorName = "MO'MINJON ZULFIQOROV";
+    if (row.inspectorName) {
+      const lowerName = row.inspectorName.trim().toLowerCase();
+      if (lowerName === 'm.zulfiqorov') {
+        row.inspectorName = "MO'MINJON ZULFIQOROV";
+      } else if (lowerName === 'unknown') {
+        row.inspectorName = "DILSHODBEK ISROILOV";
+      }
     }
   }
 
