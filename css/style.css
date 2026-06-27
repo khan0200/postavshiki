@@ -485,7 +485,7 @@ main.container-fluid {
     width: 100%;
   }
   .toolbar-actions > * {
-    flex: 1 1 100%;
+    width: 100% !important;
   }
 }
 
