@@ -98,7 +98,7 @@ window.SupplierHistory = (function () {
             <div class="text-muted small text-nowrap" style="font-size: 0.75rem;">${Utils.escapeHtml(displayDate)}</div>
           </td>
           <td>
-            <div class="mb-0"><span class="badge bg-primary text-white font-monospace">${Utils.escapeHtml(rec.detailId)}</span></div>
+            <div class="mb-0"><span class="badge bg-primary text-white font-monospace" style="font-size: 0.85rem;">${Utils.escapeHtml(rec.detailId)}</span></div>
             <div class="text-muted small text-wrap" style="font-size: 0.75rem; max-width: 200px;">${Utils.escapeHtml(rec.detailName)}</div>
           </td>
           <td class="text-end fw-semibold">${rec.quantity}</td>
