@@ -630,3 +630,8 @@ main.container-fluid {
   height: calc(2.2rem + 2px) !important; /* 20% height increase */
 }
 
+/* Fix text-muted color visibility inside active list group items */
+.list-group-item.active .text-muted {
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
