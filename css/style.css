@@ -591,6 +591,21 @@ main.container-fluid {
   font-weight: 500 !important;
 }
 
+/* Weaker blue border for all other inputs, selects, and search groups */
+.form-control:not(#rec-supplier),
+.form-select:not(#rec-supplier),
+.premium-search-group {
+  border: 1px solid rgba(13, 110, 253, 0.3) !important;
+}
+
+/* Focused input style */
+.form-control:focus,
+.form-select:focus,
+.premium-search-group:focus-within {
+  border-color: #0d6efd !important;
+  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15) !important;
+}
+
 /* 2. Qabul Qilish Yozuvlari Jurnali searchbar width and height increase by 20% */
 #table-search-group {
   width: 300px !important; 
