@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="uz" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kirish - Detallarni Boshqarish</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <script>
+    if (sessionStorage.getItem('loggedIn') === 'true') {
+      window.location.href = 'index.html';
+    }
+  </script>
+  <!-- Custom CSS for login page -->
+  <style>
+    body {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      color: #f8fafc;
+      overflow: hidden;
+      position: relative;
+    }
+    /* Animated background bubbles */
+    body::before, body::after {
+      content: "";
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0) 70%);
+      z-index: 0;
+    }
+    body::before {
+      top: -10%;
+      left: -10%;
+    }
+    body::after {
+      bottom: -10%;
+      right: -10%;
+    }
+    .login-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1.25rem;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 400px;
+      z-index: 1;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+    }
+    .random-number-display {
+      font-size: 4rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-align: center;
+      margin: 1.5rem 0;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+    }
+    .form-control-custom {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #f8fafc;
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      transition: all 0.2s ease-in-out;
+    }
+    .form-control-custom:focus {
+      background: rgba(15, 23, 42, 0.8);
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+      color: #f8fafc;
+      outline: none;
+    }
+    .btn-login {
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      border: none;
+      color: #ffffff;
+      padding: 0.75rem;
+      border-radius: 0.75rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .btn-login:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    }
+    .btn-login:active {
+      transform: translateY(0);
+    }
+    .text-helper {
+      color: #94a3b8;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-card text-center">
+    <div class="mb-3">
+      <i class="bi bi-shield-lock-fill text-primary" style="font-size: 2.5rem;"></i>
+    </div>
+    <h4 class="fw-bold mb-1">Tizimga kirish</h4>
+    <p class="text-helper mb-4">Parolni hisoblash uchun quyidagi sonni 2 ga ko'paytiring</p>
+    
+    <div class="random-number-display" id="random-num">45</div>
+    
+    <form id="login-form">
+      <div class="mb-3 text-start">
+        <label for="password-input" class="form-label small fw-semibold text-muted">Parol</label>
+        <input type="number" class="form-control form-control-custom w-100 text-center" id="password-input" placeholder="Natijani kiriting..." required autocomplete="off">
+        <div class="invalid-feedback text-center mt-2" id="error-msg" style="display: none; color: #f87171;">Xato parol! Qaytadan urinib ko'ring.</div>
+      </div>
+      <button type="submit" class="btn btn-login w-100 mt-2">Kirish</button>
+    </form>
+  </div>
+
+  <script>
+    // Generate random number between 1 and 50
+    const randomNumber = Math.floor(Math.random() * 50) + 1;
+    const correctPassword = randomNumber * 2;
+    
+    // Display number
+    document.getElementById('random-num').textContent = randomNumber;
+    
+    // Handle form submit
+    const form = document.getElementById('login-form');
+    const passwordInput = document.getElementById('password-input');
+    const errorMsg = document.getElementById('error-msg');
+    
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const enteredValue = parseInt(passwordInput.value);
+      
+      if (enteredValue === correctPassword) {
+        sessionStorage.setItem('loggedIn', 'true');
+        window.location.href = 'index.html';
+      } else {
+        errorMsg.style.display = 'block';
+        passwordInput.classList.add('is-invalid');
+        passwordInput.value = '';
+        passwordInput.focus();
+      }
+    });
+
+    passwordInput.addEventListener('input', () => {
+      errorMsg.style.display = 'none';
+      passwordInput.classList.remove('is-invalid');
+    });
+  </script>
+
+</body>
+</html>
