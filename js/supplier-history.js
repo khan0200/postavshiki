@@ -490,7 +490,6 @@ window.SupplierHistory = (function () {
           }
         }
       );
-      }
     });
   }
 
