@@ -1,14 +1,15 @@
 /**
- * api/parts/[[id]].js - GET (all, or ?supplierId=X) / POST (create, or
- * transfer via ?action=transfer) when no id; PUT (update) / DELETE when id
- * is present. Combined into one optional-catch-all route instead of separate
- * index.js + [id].js + transfer.js files, to stay under the Hobby plan's
- * serverless function count limit.
+ * api/parts.js - GET (all, or ?supplierId=X) / POST (create, or transfer via
+ * ?action=transfer) when no ?id is given; PUT (update, ?id=X) / DELETE
+ * (?id=X) for one part. Single flat file (id read from query string, not a
+ * dynamic [id] URL segment) - Vercel's optional catch-all [[id]].js syntax
+ * was not being recognized as a route by this project's build, so every
+ * dynamic api/ route was switched to plain files with ?id= instead.
  * Mirrors PartRepository.getAll/.getBySupplier/.add/.update/.remove/.transfer
  * from js/repositories.js.
  */
-const { getClient } = require('../lib/turso');
-const { sendJson, genId, readBody } = require('../lib/http');
+const { getClient } = require('./lib/turso');
+const { sendJson, genId, readBody } = require('./lib/http');
 
 module.exports = async function handler(req, res) {
   const db = getClient();

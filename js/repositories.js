@@ -57,7 +57,7 @@ window.SupplierRepository = (function () {
       if (found) return found;
       // Fallback to a direct fetch in case the cache is stale relative to id (defensive only).
       try {
-        return await PerfStats.timeRead(`suppliers.getById:${id}`, () => apiRequest('GET', `/api/suppliers/${id}`));
+        return await PerfStats.timeRead(`suppliers.getById:${id}`, () => apiRequest('GET', `/api/suppliers?id=${encodeURIComponent(id)}`));
       } catch (err) {
         return null;
       }
@@ -72,7 +72,7 @@ window.SupplierRepository = (function () {
 
     async rename(id, name) {
       const trimmedName = name.trim();
-      await PerfStats.timeWrite(`suppliers.rename:${id}`, () => apiRequest('PUT', `/api/suppliers/${id}`, { name: trimmedName }));
+      await PerfStats.timeWrite(`suppliers.rename:${id}`, () => apiRequest('PUT', `/api/suppliers?id=${encodeURIComponent(id)}`, { name: trimmedName }));
 
       Cache.invalidate(CACHE_KEY);
       Cache.invalidate(`parts:bySupplier:${id}`);
@@ -82,7 +82,7 @@ window.SupplierRepository = (function () {
     },
 
     async remove(id) {
-      await PerfStats.timeWrite(`suppliers.remove:${id}`, () => apiRequest('DELETE', `/api/suppliers/${id}`));
+      await PerfStats.timeWrite(`suppliers.remove:${id}`, () => apiRequest('DELETE', `/api/suppliers?id=${encodeURIComponent(id)}`));
 
       Cache.invalidate(CACHE_KEY);
       Cache.invalidate(`parts:bySupplier:${id}`);
@@ -123,7 +123,7 @@ window.PartRepository = (function () {
     },
 
     async update(id, supplierId, detailId, detailName) {
-      const updated = await PerfStats.timeWrite(`parts.update:${id}`, () => apiRequest('PUT', `/api/parts/${id}`, {
+      const updated = await PerfStats.timeWrite(`parts.update:${id}`, () => apiRequest('PUT', `/api/parts?id=${encodeURIComponent(id)}`, {
         detailId: detailId.trim().toUpperCase(),
         detailName: detailName.trim()
       }));
@@ -133,7 +133,7 @@ window.PartRepository = (function () {
     },
 
     async remove(id, supplierId) {
-      await PerfStats.timeWrite(`parts.remove:${id}`, () => apiRequest('DELETE', `/api/parts/${id}`));
+      await PerfStats.timeWrite(`parts.remove:${id}`, () => apiRequest('DELETE', `/api/parts?id=${encodeURIComponent(id)}`));
       Cache.invalidate('parts:all');
       Cache.invalidate(`parts:bySupplier:${supplierId}`);
       return true;
@@ -175,13 +175,13 @@ window.InspectorRepository = (function () {
 
     async update(id, fullName) {
       const trimmedName = fullName.trim();
-      const updated = await PerfStats.timeWrite(`inspectors.update:${id}`, () => apiRequest('PUT', `/api/inspectors/${id}`, { fullName: trimmedName }));
+      const updated = await PerfStats.timeWrite(`inspectors.update:${id}`, () => apiRequest('PUT', `/api/inspectors?id=${encodeURIComponent(id)}`, { fullName: trimmedName }));
       Cache.invalidate(CACHE_KEY);
       return updated;
     },
 
     async remove(id) {
-      await PerfStats.timeWrite(`inspectors.remove:${id}`, () => apiRequest('DELETE', `/api/inspectors/${id}`));
+      await PerfStats.timeWrite(`inspectors.remove:${id}`, () => apiRequest('DELETE', `/api/inspectors?id=${encodeURIComponent(id)}`));
       Cache.invalidate(CACHE_KEY);
       return true;
     }
@@ -205,13 +205,13 @@ window.CommentRepository = (function () {
 
     async update(id, text) {
       const trimmedText = text.trim();
-      const updated = await PerfStats.timeWrite(`comments.update:${id}`, () => apiRequest('PUT', `/api/comments/${id}`, { text: trimmedText }));
+      const updated = await PerfStats.timeWrite(`comments.update:${id}`, () => apiRequest('PUT', `/api/comments?id=${encodeURIComponent(id)}`, { text: trimmedText }));
       Cache.invalidate(CACHE_KEY);
       return updated;
     },
 
     async remove(id) {
-      await PerfStats.timeWrite(`comments.remove:${id}`, () => apiRequest('DELETE', `/api/comments/${id}`));
+      await PerfStats.timeWrite(`comments.remove:${id}`, () => apiRequest('DELETE', `/api/comments?id=${encodeURIComponent(id)}`));
       Cache.invalidate(CACHE_KEY);
       return true;
     }
@@ -248,7 +248,7 @@ window.ReceivingRepository = (function () {
      */
     async getDistinctYears() {
       return Cache.getOrLoad('records:distinctYears', () =>
-        PerfStats.timeRead('records.getDistinctYears', () => apiRequest('GET', '/api/records/years'))
+        PerfStats.timeRead('records.getDistinctYears', () => apiRequest('GET', '/api/records-years'))
       );
     },
 
@@ -291,7 +291,7 @@ window.ReceivingRepository = (function () {
     },
 
     async update(id, record) {
-      const updated = await PerfStats.timeWrite(`records.update:${id}`, () => apiRequest('PUT', `/api/records/${id}`, {
+      const updated = await PerfStats.timeWrite(`records.update:${id}`, () => apiRequest('PUT', `/api/records?id=${encodeURIComponent(id)}`, {
         date: record.date,
         fn: record.fn.trim(),
         supplierId: record.supplierId,
@@ -310,7 +310,7 @@ window.ReceivingRepository = (function () {
     },
 
     async remove(id, supplierId) {
-      await PerfStats.timeWrite(`records.remove:${id}`, () => apiRequest('DELETE', `/api/records/${id}`));
+      await PerfStats.timeWrite(`records.remove:${id}`, () => apiRequest('DELETE', `/api/records?id=${encodeURIComponent(id)}`));
       invalidateForSupplier(supplierId);
       return true;
     },
@@ -323,7 +323,7 @@ window.ReceivingRepository = (function () {
      * of the browser issuing many small batched writes directly to the DB.
      */
     async importRows(supplierId, supplierName, rows) {
-      const result = await PerfStats.timeWrite('records.importRows', () => apiRequest('POST', '/api/records/import', {
+      const result = await PerfStats.timeWrite('records.importRows', () => apiRequest('POST', '/api/records-import', {
         supplierId,
         supplierName,
         rows
