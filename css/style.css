@@ -581,3 +581,52 @@ main.container-fluid {
   color: var(--text-muted);
   opacity: 0.75;
 }
+
+/* Custom overrides requested by user */
+
+/* 1. Make visible/prominent color with Yetkazib beruvchi input */
+#rec-supplier {
+  border: 2px solid #0d6efd !important;
+  box-shadow: 0 0 8px rgba(13, 110, 253, 0.25) !important;
+  font-weight: 500 !important;
+}
+
+/* 2. Qabul Qilish Yozuvlari Jurnali searchbar width and height increase by 20% */
+#table-search-group {
+  max-width: 320px !important; /* 250px * 1.28 */
+}
+#table-search {
+  padding-top: 0.45rem !important;
+  padding-bottom: 0.45rem !important;
+  font-size: 0.95rem !important;
+}
+
+/* 3. Yetkazib beruvchi paneli: Tarix and Detallar ro'yxati searchbars + filters width & height increase by 20% */
+#history-search-group {
+  max-width: 300px !important; /* 250px * 1.2 */
+}
+#history-search {
+  padding-top: 0.45rem !important;
+  padding-bottom: 0.45rem !important;
+  font-size: 0.95rem !important;
+}
+
+#parts-search-group {
+  max-width: 264px !important; /* 220px * 1.2 */
+}
+#parts-search {
+  padding-top: 0.45rem !important;
+  padding-bottom: 0.45rem !important;
+  font-size: 0.95rem !important;
+}
+
+/* Filters size increase by 20% */
+#history-filter-inspector,
+#history-filter-part {
+  padding-top: 0.45rem !important;
+  padding-bottom: 0.45rem !important;
+  font-size: 0.95rem !important;
+  max-width: 216px !important; /* 180px * 1.2 */
+  height: calc(2.2rem + 2px) !important; /* 20% height increase */
+}
+
