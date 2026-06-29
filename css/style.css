@@ -686,3 +686,37 @@ main.container-fluid {
   background-color: rgba(13, 110, 253, 0.16) !important;
 }
 
+/* Custom fill colors for preset pills */
+.preset-pill-ok {
+  background-color: #198754 !important; /* success green */
+  border-color: #198754 !important;
+  color: #ffffff !important;
+}
+.preset-pill-ok:hover {
+  background-color: #157347 !important;
+  border-color: #146c43 !important;
+  color: #ffffff !important;
+}
+
+.preset-pill-qaytarilsin {
+  background-color: #dc3545 !important; /* danger red */
+  border-color: #dc3545 !important;
+  color: #ffffff !important;
+}
+.preset-pill-qaytarilsin:hover {
+  background-color: #bb2d3b !important;
+  border-color: #b02a37 !important;
+  color: #ffffff !important;
+}
+
+.preset-pill-zanglagan {
+  background-color: #fd7e14 !important; /* orange */
+  border-color: #fd7e14 !important;
+  color: #ffffff !important;
+}
+.preset-pill-zanglagan:hover {
+  background-color: #e06c11 !important;
+  border-color: #d3640f !important;
+  color: #ffffff !important;
+}
+
