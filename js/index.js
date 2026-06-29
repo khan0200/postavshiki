@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // State Management for Registration Screen
   let activeParts = []; // parts of the selected supplier
   let records = [];
-  const tableState = Utils.createTableState({ sortColumn: 'date', sortOrder: 'desc', pageSize: 30 });
+  const tableState = Utils.createTableState({ sortColumn: 'createdAt', sortOrder: 'desc', pageSize: 30 });
   let commentPresets = []; // cached comment presets
 
   // Set default date to today (local timezone) and set default quantities
@@ -155,6 +155,25 @@ document.addEventListener('DOMContentLoaded', () => {
       commentPresetsList.classList.toggle('show');
     });
   }
+
+  // Preset pills quick picker logic
+  document.querySelectorAll('#preset-pills-container .preset-pill-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const value = btn.getAttribute('data-value');
+      const currentVal = commentInput.value.trim();
+      if (!currentVal || currentVal === 'OK') {
+        commentInput.value = value;
+      } else {
+        const parts = currentVal.split(',').map(p => p.trim()).filter(Boolean);
+        if (!parts.includes(value)) {
+          parts.push(value);
+          commentInput.value = parts.join(', ');
+        }
+      }
+      commentInput.focus();
+    });
+  });
 
   // --- SEARCHABLE DETAIL ID DROPDOWN (shared component) ---
   const detailDropdown = UI.createSearchableDropdown({

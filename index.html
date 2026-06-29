@@ -90,7 +90,7 @@
                 </div>
                 <div class="form-col-fn col-12 col-sm-6">
                   <label for="rec-fn" class="form-label small fw-semibold">F/N (Buyurtma raqami)</label>
-                  <input type="text" class="form-control" id="rec-fn" placeholder="Masalan, PO-5531" required>
+                  <input type="text" class="form-control" id="rec-fn" required>
                   <div class="invalid-feedback">F/N (Buyurtma raqami) kiritilishi shart.</div>
                 </div>
                 <div class="form-col-supplier col-12 col-sm-6">
@@ -116,19 +116,19 @@
               </div>
 
               <!-- Row 2: Qty Received, Qty Checked, Qty Returned, Inspector, Comments -->
-              <div class="row g-3 mb-4">
+              <div class="row g-3 mb-1">
                 <div class="form-col-qty col-6 col-sm-4">
-                  <label for="rec-quantity" class="form-label small fw-semibold">Qabul qilingan miqdor</label>
-                  <input type="number" class="form-control" id="rec-quantity" min="1" placeholder="Masalan, 5" required>
+                  <label for="rec-quantity" class="form-label small fw-semibold">Qabul qilindi</label>
+                  <input type="number" class="form-control" id="rec-quantity" min="1" required>
                   <div class="invalid-feedback">0 dan katta bo'lishi kerak.</div>
                 </div>
                 <div class="form-col-qty col-6 col-sm-4">
-                  <label for="rec-checked-qty" class="form-label small fw-semibold">Tekshirilgan miqdor</label>
+                  <label for="rec-checked-qty" class="form-label small fw-semibold">Tekshirildi</label>
                   <input type="number" class="form-control" id="rec-checked-qty" min="0" value="5" required>
                   <div class="invalid-feedback">Qabul qilingan miqdordan oshmasligi kerak.</div>
                 </div>
                 <div class="form-col-qty col-12 col-sm-4">
-                  <label for="rec-returned-qty" class="form-label small fw-semibold">Qaytarilgan miqdor</label>
+                  <label for="rec-returned-qty" class="form-label small fw-semibold">Qaytarildi</label>
                   <input type="number" class="form-control" id="rec-returned-qty" min="0" value="0" required>
                   <div class="invalid-feedback">Tekshirilgan miqdordan oshmasligi kerak.</div>
                 </div>
@@ -147,6 +147,11 @@
                     <div class="custom-dropdown-menu" id="predefined-comments-list">
                       <!-- Populated dynamically via JS -->
                     </div>
+                  </div>
+                  <div class="mt-2 d-flex gap-2 flex-wrap" id="preset-pills-container">
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill preset-pill-btn" data-value="OK">OK</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill preset-pill-btn" data-value="QAYTARILSIN">QAYTARILSIN</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill preset-pill-btn" data-value="ZANGLAGAN">ZANGLAGAN</button>
                   </div>
                 </div>
               </div>

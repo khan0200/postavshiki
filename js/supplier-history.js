@@ -491,6 +491,25 @@ window.SupplierHistory = (function () {
         }
       );
     });
+
+    // Preset pills quick picker logic for edit modal
+    document.querySelectorAll('#edit-preset-pills-container .preset-pill-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const value = btn.getAttribute('data-value');
+        const currentVal = P.editRecComment.value.trim();
+        if (!currentVal || currentVal === 'OK') {
+          P.editRecComment.value = value;
+        } else {
+          const parts = currentVal.split(',').map(p => p.trim()).filter(Boolean);
+          if (!parts.includes(value)) {
+            parts.push(value);
+            P.editRecComment.value = parts.join(', ');
+          }
+        }
+        P.editRecComment.focus();
+      });
+    });
   }
 
   return { load, openEditRecordModal, bindEvents };

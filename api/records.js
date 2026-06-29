@@ -43,7 +43,7 @@ module.exports = async function handler(req, res) {
       const result = await db.execute({
         sql: `SELECT id, date, fn, supplierId, supplierName, detailId, detailName, quantity,
                      checkedQuantity, returnedQuantity, inspectorId, inspectorName, comment, createdAt, updatedAt
-              FROM records ORDER BY date DESC LIMIT ?`,
+              FROM records ORDER BY createdAt DESC LIMIT ?`,
         args: [count]
       });
       return sendJson(res, 200, result.rows);

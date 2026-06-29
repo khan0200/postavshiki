@@ -461,17 +461,17 @@
             <!-- Row 3: Quantities -->
             <div class="row g-3 mb-3">
               <div class="col-6 col-md-4">
-                <label for="edit-rec-qty" class="form-label small fw-semibold">Qabul qilingan miqdor</label>
+                <label for="edit-rec-qty" class="form-label small fw-semibold">Qabul qilindi</label>
                 <input type="number" class="form-control" id="edit-rec-qty" min="1" required>
                 <div class="invalid-feedback">0 dan katta bo'lishi kerak.</div>
               </div>
               <div class="col-6 col-md-4">
-                <label for="edit-rec-checked" class="form-label small fw-semibold">Tekshirilgan miqdor</label>
+                <label for="edit-rec-checked" class="form-label small fw-semibold">Tekshirildi</label>
                 <input type="number" class="form-control" id="edit-rec-checked" min="0" required>
                 <div class="invalid-feedback">Qabul qilingan miqdordan oshmasligi kerak.</div>
               </div>
               <div class="col-12 col-md-4">
-                <label for="edit-rec-returned" class="form-label small fw-semibold">Qaytarilgan miqdor</label>
+                <label for="edit-rec-returned" class="form-label small fw-semibold">Qaytarildi</label>
                 <input type="number" class="form-control" id="edit-rec-returned" min="0" required>
                 <div class="invalid-feedback">Tekshirilgan miqdordan oshmasligi kerak.</div>
               </div>
@@ -481,6 +481,11 @@
             <div class="mb-3">
               <label for="edit-rec-comment" class="form-label small fw-semibold">Izohlar</label>
               <input type="text" class="form-control" id="edit-rec-comment">
+              <div class="mt-2 d-flex gap-2 flex-wrap" id="edit-preset-pills-container">
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill preset-pill-btn" data-value="OK">OK</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill preset-pill-btn" data-value="QAYTARILSIN">QAYTARILSIN</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill preset-pill-btn" data-value="ZANGLAGAN">ZANGLAGAN</button>
+              </div>
             </div>
 
           </div>
