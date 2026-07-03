@@ -167,6 +167,135 @@ window.UI = {
     return { render };
   },
 
+  // View detailed receive records in a popup modal
+  showReceiveDetailModal(rec) {
+    let modalElem = document.getElementById('receive-detail-modal');
+    if (!modalElem) {
+      const html = `
+        <div class="modal fade" id="receive-detail-modal" tabindex="-1" aria-labelledby="receiveDetailModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content border-0 shadow-lg">
+              <div class="modal-header bg-body-tertiary">
+                <h5 class="modal-title fw-bold text-primary" id="receiveDetailModalLabel">
+                  <i class="bi bi-info-circle-fill me-2"></i>Qabul qilish tafsilotlari
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <!-- Info Grid Card -->
+                <div class="card border-0 bg-body-tertiary p-3 mb-3">
+                  <div class="d-flex justify-content-between mb-2 pb-1 border-bottom border-light-subtle">
+                    <span class="text-muted small">Buyurtma (F/N):</span>
+                    <strong class="font-monospace text-dark-emphasis" id="detail-modal-fn"></strong>
+                  </div>
+                  <div class="d-flex justify-content-between mb-2 pb-1 border-bottom border-light-subtle">
+                    <span class="text-muted small">Sana:</span>
+                    <span class="fw-semibold text-dark-emphasis" id="detail-modal-date"></span>
+                  </div>
+                  <div class="d-flex justify-content-between mb-2 pb-1 border-bottom border-light-subtle">
+                    <span class="text-muted small">Yetkazib beruvchi:</span>
+                    <span class="fw-semibold text-dark-emphasis text-end" id="detail-modal-supplier" style="max-width: 65%;"></span>
+                  </div>
+                  <div class="d-flex justify-content-between">
+                    <span class="text-muted small">Inspektor:</span>
+                    <span class="fw-semibold text-dark-emphasis text-end" id="detail-modal-inspector" style="max-width: 65%;"></span>
+                  </div>
+                </div>
+
+                <!-- Detal Card -->
+                <h6 class="fw-bold mb-2 text-secondary-emphasis">Detal ma'lumotlari</h6>
+                <div class="card border-0 bg-body-tertiary p-3 mb-3">
+                  <div class="d-flex align-items-center">
+                    <span class="badge bg-primary text-white font-monospace me-2 px-2 py-1.5" id="detail-modal-detail-id" style="font-size: 0.85rem;"></span>
+                    <span class="fw-bold text-dark-emphasis text-truncate" id="detail-modal-detail-name"></span>
+                  </div>
+                </div>
+
+                <!-- Miqdorlar -->
+                <h6 class="fw-bold mb-2 text-secondary-emphasis">Miqdorlar</h6>
+                <div class="row g-2 mb-3">
+                  <div class="col-4">
+                    <div class="border rounded p-2 text-center bg-body-secondary border-secondary-subtle">
+                      <div class="text-muted small mb-1" style="font-size: 0.72rem;">Qabul qilindi</div>
+                      <strong class="fs-5 text-dark-emphasis" id="detail-modal-qty"></strong>
+                    </div>
+                  </div>
+                  <div class="col-4">
+                    <div class="border rounded p-2 text-center bg-success-subtle border-success-subtle text-success">
+                      <div class="text-success-emphasis small mb-1" style="font-size: 0.72rem;">Tekshirildi</div>
+                      <strong class="fs-5 text-success-emphasis" id="detail-modal-checked"></strong>
+                    </div>
+                  </div>
+                  <div class="col-4">
+                    <div class="border rounded p-2 text-center bg-danger-subtle border-danger-subtle text-danger">
+                      <div class="text-danger-emphasis small mb-1" style="font-size: 0.72rem;">Qaytarildi</div>
+                      <strong class="fs-5 text-danger-emphasis" id="detail-modal-returned"></strong>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Izoh -->
+                <h6 class="fw-bold mb-2 text-secondary-emphasis">Izoh</h6>
+                <div class="p-3 border rounded text-center fw-bold" id="detail-modal-comment">
+                </div>
+              </div>
+              <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', html);
+      modalElem = document.getElementById('receive-detail-modal');
+    }
+
+    const supplierName = rec.supplierName || (window.SupplierPage && window.SupplierPage.detailSupplierName ? window.SupplierPage.detailSupplierName.textContent : '');
+    
+    // Parse/format date with hours:minutes if available
+    const displayDate = (() => {
+      if (!rec.date) return '';
+      if (rec.createdAt) {
+        try {
+          const dateObj = new Date(rec.createdAt);
+          if (!isNaN(dateObj.getTime())) {
+            const hours = String(dateObj.getHours()).padStart(2, '0');
+            const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+            return `${rec.date} ${hours}:${minutes}`;
+          }
+        } catch (e) {
+          // ignore and fallback
+        }
+      }
+      return rec.date;
+    })();
+
+    document.getElementById('detail-modal-fn').textContent = rec.fn || '';
+    document.getElementById('detail-modal-date').textContent = displayDate;
+    document.getElementById('detail-modal-supplier').textContent = supplierName;
+    document.getElementById('detail-modal-inspector').textContent = rec.inspectorName || '';
+    document.getElementById('detail-modal-detail-id').textContent = rec.detailId || '';
+    document.getElementById('detail-modal-detail-name').textContent = rec.detailName || '';
+    document.getElementById('detail-modal-qty').textContent = rec.quantity || '0';
+    document.getElementById('detail-modal-checked').textContent = rec.checkedQuantity || '0';
+    document.getElementById('detail-modal-returned').textContent = rec.returnedQuantity || '0';
+
+    const commentEl = document.getElementById('detail-modal-comment');
+    const commentText = rec.comment || 'OK';
+    commentEl.textContent = commentText;
+
+    // Apply color class based on comment content
+    commentEl.className = 'p-2.5 border rounded text-white text-center fw-semibold';
+    if (commentText.trim().toUpperCase() === 'OK') {
+      commentEl.classList.add('bg-success', 'border-success');
+    } else {
+      commentEl.classList.add('bg-danger', 'border-danger');
+    }
+
+    const bsModal = new bootstrap.Modal(modalElem);
+    bsModal.show();
+  },
+
   // Shared navigation initialization
   initNavbar(activePage) {
     const navbar = document.querySelector('.navbar');

@@ -156,7 +156,16 @@ window.SupplierHistory = (function () {
           </td>
         `;
 
-        tr.querySelector('.delete-rec-btn').addEventListener('click', () => {
+        tr.style.cursor = 'pointer';
+        tr.addEventListener('click', (e) => {
+          if (e.target.closest('.delete-rec-btn') || e.target.closest('.edit-rec-btn') || e.target.closest('button')) {
+            return;
+          }
+          UI.showReceiveDetailModal(rec);
+        });
+
+        tr.querySelector('.delete-rec-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
           UI.confirm(
             'Yozuvni o\'chirish?',
             `Haqiqatan ham ${rec.fn} buyurtma yozuvini o'chirmoqchisiz? Bu amalni bekor qilib bo'lmaydi.`,
@@ -177,8 +186,9 @@ window.SupplierHistory = (function () {
           );
         });
 
-        tr.querySelector('.edit-rec-btn').addEventListener('click', async () => {
-          await openEditRecordModal(rec);
+        tr.querySelector('.edit-rec-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          openEditRecordModal(rec);
         });
 
         return tr;

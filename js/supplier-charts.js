@@ -95,8 +95,38 @@ window.SupplierCharts = (function () {
       if (P.incomingChart) P.incomingChart.destroy();
       if (P.returnedChart) P.returnedChart.destroy();
 
+      // Custom inline plugin to display data numbers above bars and points
+      const chartValueLabelsPlugin = {
+        id: 'chartValueLabels',
+        afterDatasetsDraw(chart) {
+          const { ctx } = chart;
+          ctx.save();
+          chart.data.datasets.forEach((dataset, datasetIndex) => {
+            const meta = chart.getDatasetMeta(datasetIndex);
+            if (meta.hidden) return;
+            meta.data.forEach((element, index) => {
+              const value = dataset.data[index];
+              if (value === 0 || value === null || value === undefined) return;
+              
+              ctx.fillStyle = textColor;
+              ctx.font = 'bold 11px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'bottom';
+              
+              const formattedValue = typeof value === 'number' ? value.toLocaleString() : value;
+              const x = element.x;
+              const y = element.y - 6; // Draw slightly above the bar/point
+              
+              ctx.fillText(formattedValue, x, y);
+            });
+          });
+          ctx.restore();
+        }
+      };
+
       P.incomingChart = new Chart(ctxIncoming, {
         type: 'bar',
+        plugins: [chartValueLabelsPlugin],
         data: {
           labels: labels,
           datasets: [{
@@ -114,13 +144,18 @@ window.SupplierCharts = (function () {
           plugins: { legend: { display: false } },
           scales: {
             x: { grid: { display: false }, ticks: { color: textColor } },
-            y: { grid: { color: gridColor }, ticks: { color: textColor } }
+            y: { 
+              grid: { color: gridColor }, 
+              ticks: { color: textColor },
+              grace: '10%' // Add 10% grace space at the top to prevent values from being clipped
+            }
           }
         }
       });
 
       P.returnedChart = new Chart(ctxReturned, {
         type: 'line',
+        plugins: [chartValueLabelsPlugin],
         data: {
           labels: labels,
           datasets: [{
@@ -140,7 +175,11 @@ window.SupplierCharts = (function () {
           plugins: { legend: { display: false } },
           scales: {
             x: { grid: { display: false }, ticks: { color: textColor } },
-            y: { grid: { color: gridColor }, ticks: { color: textColor } }
+            y: { 
+              grid: { color: gridColor }, 
+              ticks: { color: textColor },
+              grace: '10%' // Add 10% grace space at the top to prevent values from being clipped
+            }
           }
         }
       });

@@ -536,6 +536,11 @@ document.addEventListener('DOMContentLoaded', () => {
         </td>
       `;
 
+      tr.style.cursor = 'pointer';
+      tr.addEventListener('click', () => {
+        UI.showReceiveDetailModal(rec);
+      });
+
       return tr;
     });
   }
