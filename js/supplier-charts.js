@@ -1,68 +1,163 @@
 /**
- * supplier-charts.js - "Reports & Stats" tab: year/month filters + Chart.js rendering.
+ * supplier-charts.js - "Qabul qilingan" & "Qaytarilgan" tabs: year/month filters + Chart.js rendering.
  * Depends on: SupplierPage, ReceivingRepository, Chart.js (global `Chart`).
  */
 
 window.SupplierCharts = (function () {
   const P = SupplierPage;
 
-  async function initYearSelector() {
+  // Custom inline plugin to display data numbers above vertical bars
+  const chartValueLabelsPluginVertical = {
+    id: 'chartValueLabelsVertical',
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      ctx.save();
+      chart.data.datasets.forEach((dataset, datasetIndex) => {
+        const meta = chart.getDatasetMeta(datasetIndex);
+        if (meta.hidden) return;
+        meta.data.forEach((element, index) => {
+          const value = dataset.data[index];
+          if (value === 0 || value === null || value === undefined) return;
+          
+          const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+          ctx.fillStyle = isDark ? '#94a3b8' : '#64748b';
+          ctx.font = 'bold 11px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          
+          const formattedValue = typeof value === 'number' ? value.toLocaleString() : value;
+          const x = element.x;
+          const y = element.y - 6; // Draw slightly above the bar
+          
+          ctx.fillText(formattedValue, x, y);
+        });
+      });
+      ctx.restore();
+    }
+  };
+
+  // Custom inline plugin to display data numbers to the right of horizontal bars
+  const chartValueLabelsPluginHorizontal = {
+    id: 'chartValueLabelsHorizontal',
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      ctx.save();
+      chart.data.datasets.forEach((dataset, datasetIndex) => {
+        const meta = chart.getDatasetMeta(datasetIndex);
+        if (meta.hidden) return;
+        meta.data.forEach((element, index) => {
+          const value = dataset.data[index];
+          if (value === 0 || value === null || value === undefined) return;
+          
+          const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+          ctx.fillStyle = isDark ? '#94a3b8' : '#64748b';
+          ctx.font = 'bold 11px sans-serif';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          
+          const formattedValue = typeof value === 'number' ? value.toLocaleString() : value;
+          const x = element.x + 6; // Draw slightly to the right of the bar
+          const y = element.y;
+          
+          ctx.fillText(formattedValue, x, y);
+        });
+      });
+      ctx.restore();
+    }
+  };
+
+  async function initYearSelectors() {
     try {
-      // Year options need to span every record in the system (not just the active
-      // supplier). This is cached and read once per page session (see
-      // ReceivingRepository.getDistinctYears), not re-read on every tab switch.
+      // Fetch distinct years from database
       const years = new Set(await ReceivingRepository.getDistinctYears());
       years.add(new Date().getFullYear());
 
-      P.chartYearSelect.innerHTML = '';
-      Array.from(years).sort((a, b) => b - a).forEach(yr => {
-        const opt = document.createElement('option');
-        opt.value = yr;
-        opt.textContent = yr;
-        P.chartYearSelect.appendChild(opt);
-      });
+      const sortedYears = Array.from(years).sort((a, b) => b - a);
 
-      P.chartYearSelect.addEventListener('change', async () => {
-        await render();
-      });
+      // Populate Received tab year select
+      if (P.receivedChartYearSelect) {
+        P.receivedChartYearSelect.innerHTML = '';
+        sortedYears.forEach(yr => {
+          const opt = document.createElement('option');
+          opt.value = yr;
+          opt.textContent = yr;
+          P.receivedChartYearSelect.appendChild(opt);
+        });
+      }
 
-      P.chartMonthSelect.addEventListener('change', async () => {
-        await render();
-      });
+      // Populate Returned tab year select
+      if (P.returnedChartYearSelect) {
+        P.returnedChartYearSelect.innerHTML = '';
+        sortedYears.forEach(yr => {
+          const opt = document.createElement('option');
+          opt.value = yr;
+          opt.textContent = yr;
+          P.returnedChartYearSelect.appendChild(opt);
+        });
+      }
+
+      // Bind filter change events
+      if (P.receivedChartYearSelect) {
+        P.receivedChartYearSelect.addEventListener('change', async () => {
+          await renderReceived();
+        });
+      }
+      if (P.receivedChartMonthSelect) {
+        P.receivedChartMonthSelect.addEventListener('change', async () => {
+          await renderReceived();
+        });
+      }
+
+      if (P.returnedChartYearSelect) {
+        P.returnedChartYearSelect.addEventListener('change', async () => {
+          await renderReturned();
+        });
+      }
+      if (P.returnedChartMonthSelect) {
+        P.returnedChartMonthSelect.addEventListener('change', async () => {
+          await renderReturned();
+        });
+      }
     } catch (err) {
       console.error(err);
     }
   }
 
-  async function render() {
-    if (!P.activeSupplierId || !P.chartYearSelect.value) return;
+  async function renderReceived() {
+    if (!P.activeSupplierId) return;
+    const yearSelect = P.receivedChartYearSelect;
+    const monthSelect = P.receivedChartMonthSelect;
+    if (!yearSelect || !yearSelect.value) return;
+
     if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.add('active');
     try {
-      const selectedYear = Number(P.chartYearSelect.value);
-      const selectedMonth = P.chartMonthSelect.value; // 'all' or '0'-'11'
+      const selectedYear = Number(yearSelect.value);
+      const selectedMonth = monthSelect.value; // 'all' or '0'-'11'
 
-      // Scoped Firestore query (where supplierId == X), cached and shared with
-      // the History tab - switching tabs for the same supplier reuses this read.
+      // Get records for the active supplier
       const records = await ReceivingRepository.getBySupplier(P.activeSupplierId);
 
+      // Filter by selected year & month
+      const filteredRecords = records.filter(rec => {
+        const d = new Date(rec.date);
+        if (d.getFullYear() !== selectedYear) return false;
+        if (selectedMonth !== 'all' && d.getMonth() !== Number(selectedMonth)) return false;
+        return true;
+      });
+
       let labels = [];
-      let incomingData = [];
-      let returnedData = [];
+      let qtyData = [];
 
       const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
       if (selectedMonth === 'all') {
         labels = monthNames;
-        incomingData = Array(12).fill(0);
-        returnedData = Array(12).fill(0);
+        qtyData = Array(12).fill(0);
 
-        records.forEach(rec => {
+        filteredRecords.forEach(rec => {
           const d = new Date(rec.date);
-          if (d.getFullYear() === selectedYear) {
-            const m = d.getMonth();
-            incomingData[m] += rec.quantity;
-            returnedData[m] += rec.returnedQuantity;
-          }
+          const m = d.getMonth();
+          qtyData[m] += rec.quantity;
         });
       } else {
         const monthIdx = Number(selectedMonth);
@@ -72,68 +167,60 @@ window.SupplierCharts = (function () {
           labels.push(d.toString());
         }
 
-        incomingData = Array(daysInMonth).fill(0);
-        returnedData = Array(daysInMonth).fill(0);
+        qtyData = Array(daysInMonth).fill(0);
 
-        records.forEach(rec => {
+        filteredRecords.forEach(rec => {
           const d = new Date(rec.date);
-          if (d.getFullYear() === selectedYear && d.getMonth() === monthIdx) {
-            const day = d.getDate();
-            incomingData[day - 1] += rec.quantity;
-            returnedData[day - 1] += rec.returnedQuantity;
-          }
+          const day = d.getDate();
+          qtyData[day - 1] += rec.quantity;
         });
       }
+
+      // Group by detailId to find top received parts
+      const partTotals = {};
+      filteredRecords.forEach(rec => {
+        const key = rec.detailId;
+        const name = rec.detailName || '';
+        if (!partTotals[key]) {
+          partTotals[key] = { detailId: key, detailName: name, total: 0 };
+        }
+        partTotals[key].total += rec.quantity;
+      });
+
+      const topParts = Object.values(partTotals)
+        .filter(item => item.total > 0)
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 10);
+
+      const topLabels = topParts.map(item => {
+        const namePart = item.detailName ? ` - ${item.detailName}` : '';
+        const fullLabel = `${item.detailId}${namePart}`;
+        return fullLabel.length > 25 ? fullLabel.substring(0, 25) + '...' : fullLabel;
+      });
+      const topData = topParts.map(item => item.total);
 
       const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
       const textColor = isDark ? '#94a3b8' : '#64748b';
       const gridColor = isDark ? '#334155' : '#e2e8f0';
 
-      const ctxIncoming = document.getElementById('incomingChart').getContext('2d');
-      const ctxReturned = document.getElementById('returnedChart').getContext('2d');
+      const ctxQty = document.getElementById('receivedQtyChart').getContext('2d');
+      const ctxTop = document.getElementById('topReceivedPartsChart').getContext('2d');
 
-      if (P.incomingChart) P.incomingChart.destroy();
-      if (P.returnedChart) P.returnedChart.destroy();
+      if (P.receivedQtyChart) P.receivedQtyChart.destroy();
+      if (P.topReceivedPartsChart) P.topReceivedPartsChart.destroy();
 
-      // Custom inline plugin to display data numbers above bars and points
-      const chartValueLabelsPlugin = {
-        id: 'chartValueLabels',
-        afterDatasetsDraw(chart) {
-          const { ctx } = chart;
-          ctx.save();
-          chart.data.datasets.forEach((dataset, datasetIndex) => {
-            const meta = chart.getDatasetMeta(datasetIndex);
-            if (meta.hidden) return;
-            meta.data.forEach((element, index) => {
-              const value = dataset.data[index];
-              if (value === 0 || value === null || value === undefined) return;
-              
-              ctx.fillStyle = textColor;
-              ctx.font = 'bold 11px sans-serif';
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'bottom';
-              
-              const formattedValue = typeof value === 'number' ? value.toLocaleString() : value;
-              const x = element.x;
-              const y = element.y - 6; // Draw slightly above the bar/point
-              
-              ctx.fillText(formattedValue, x, y);
-            });
-          });
-          ctx.restore();
-        }
-      };
+      const primaryColor = isDark ? '#38bdf8' : '#0f172a';
 
-      P.incomingChart = new Chart(ctxIncoming, {
+      P.receivedQtyChart = new Chart(ctxQty, {
         type: 'bar',
-        plugins: [chartValueLabelsPlugin],
+        plugins: [chartValueLabelsPluginVertical],
         data: {
           labels: labels,
           datasets: [{
-            label: 'Total Incoming Parts',
-            data: incomingData,
-            backgroundColor: '#0f172a',
-            borderColor: '#0f172a',
+            label: 'Jami qabul qilingan',
+            data: qtyData,
+            backgroundColor: primaryColor,
+            borderColor: primaryColor,
             borderRadius: 4,
             maxBarThickness: 32
           }]
@@ -147,26 +234,152 @@ window.SupplierCharts = (function () {
             y: { 
               grid: { color: gridColor }, 
               ticks: { color: textColor },
-              grace: '10%' // Add 10% grace space at the top to prevent values from being clipped
+              grace: '10%'
             }
           }
         }
       });
 
-      P.returnedChart = new Chart(ctxReturned, {
-        type: 'line',
-        plugins: [chartValueLabelsPlugin],
+      P.topReceivedPartsChart = new Chart(ctxTop, {
+        type: 'bar',
+        plugins: [chartValueLabelsPluginHorizontal],
+        data: {
+          labels: topLabels,
+          datasets: [{
+            label: 'Qabul qilingan',
+            data: topData,
+            backgroundColor: primaryColor,
+            borderColor: primaryColor,
+            borderRadius: 4,
+            maxBarThickness: 24
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { 
+              grid: { color: gridColor }, 
+              ticks: { color: textColor },
+              grace: '10%'
+            },
+            y: { 
+              grid: { display: false }, 
+              ticks: { color: textColor }
+            }
+          }
+        }
+      });
+
+    } catch (err) {
+      console.error(err);
+    } finally {
+      if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.remove('active');
+    }
+  }
+
+  async function renderReturned() {
+    if (!P.activeSupplierId) return;
+    const yearSelect = P.returnedChartYearSelect;
+    const monthSelect = P.returnedChartMonthSelect;
+    if (!yearSelect || !yearSelect.value) return;
+
+    if (P.supplierDetailSpinner) P.supplierDetailSpinner.classList.add('active');
+    try {
+      const selectedYear = Number(yearSelect.value);
+      const selectedMonth = monthSelect.value; // 'all' or '0'-'11'
+
+      // Get records for the active supplier
+      const records = await ReceivingRepository.getBySupplier(P.activeSupplierId);
+
+      // Filter by selected year & month
+      const filteredRecords = records.filter(rec => {
+        const d = new Date(rec.date);
+        if (d.getFullYear() !== selectedYear) return false;
+        if (selectedMonth !== 'all' && d.getMonth() !== Number(selectedMonth)) return false;
+        return true;
+      });
+
+      let labels = [];
+      let qtyData = [];
+
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+      if (selectedMonth === 'all') {
+        labels = monthNames;
+        qtyData = Array(12).fill(0);
+
+        filteredRecords.forEach(rec => {
+          const d = new Date(rec.date);
+          const m = d.getMonth();
+          qtyData[m] += rec.returnedQuantity;
+        });
+      } else {
+        const monthIdx = Number(selectedMonth);
+        const daysInMonth = new Date(selectedYear, monthIdx + 1, 0).getDate();
+
+        for (let d = 1; d <= daysInMonth; d++) {
+          labels.push(d.toString());
+        }
+
+        qtyData = Array(daysInMonth).fill(0);
+
+        filteredRecords.forEach(rec => {
+          const d = new Date(rec.date);
+          const day = d.getDate();
+          qtyData[day - 1] += rec.returnedQuantity;
+        });
+      }
+
+      // Group by detailId to find top returned parts
+      const partTotals = {};
+      filteredRecords.forEach(rec => {
+        const key = rec.detailId;
+        const name = rec.detailName || '';
+        if (!partTotals[key]) {
+          partTotals[key] = { detailId: key, detailName: name, total: 0 };
+        }
+        partTotals[key].total += rec.returnedQuantity;
+      });
+
+      const topParts = Object.values(partTotals)
+        .filter(item => item.total > 0)
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 10);
+
+      const topLabels = topParts.map(item => {
+        const namePart = item.detailName ? ` - ${item.detailName}` : '';
+        const fullLabel = `${item.detailId}${namePart}`;
+        return fullLabel.length > 25 ? fullLabel.substring(0, 25) + '...' : fullLabel;
+      });
+      const topData = topParts.map(item => item.total);
+
+      const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+      const textColor = isDark ? '#94a3b8' : '#64748b';
+      const gridColor = isDark ? '#334155' : '#e2e8f0';
+
+      const ctxQty = document.getElementById('returnedQtyChart').getContext('2d');
+      const ctxTop = document.getElementById('topReturnedPartsChart').getContext('2d');
+
+      if (P.returnedQtyChart) P.returnedQtyChart.destroy();
+      if (P.topReturnedPartsChart) P.topReturnedPartsChart.destroy();
+
+      const dangerColor = '#dc3545';
+
+      P.returnedQtyChart = new Chart(ctxQty, {
+        type: 'bar',
+        plugins: [chartValueLabelsPluginVertical],
         data: {
           labels: labels,
           datasets: [{
-            label: 'Returned Parts',
-            data: returnedData,
-            backgroundColor: 'rgba(220, 53, 69, 0.1)',
-            borderColor: '#dc3545',
-            borderWidth: 2,
-            fill: true,
-            tension: 0.3,
-            pointBackgroundColor: '#dc3545'
+            label: 'Jami qaytarilgan',
+            data: qtyData,
+            backgroundColor: dangerColor,
+            borderColor: dangerColor,
+            borderRadius: 4,
+            maxBarThickness: 32
           }]
         },
         options: {
@@ -178,17 +391,45 @@ window.SupplierCharts = (function () {
             y: { 
               grid: { color: gridColor }, 
               ticks: { color: textColor },
-              grace: '10%' // Add 10% grace space at the top to prevent values from being clipped
+              grace: '10%'
             }
           }
         }
       });
 
-      if (isDark) {
-        P.incomingChart.data.datasets[0].backgroundColor = '#38bdf8';
-        P.incomingChart.data.datasets[0].borderColor = '#38bdf8';
-        P.incomingChart.update();
-      }
+      P.topReturnedPartsChart = new Chart(ctxTop, {
+        type: 'bar',
+        plugins: [chartValueLabelsPluginHorizontal],
+        data: {
+          labels: topLabels,
+          datasets: [{
+            label: 'Qaytarilgan',
+            data: topData,
+            backgroundColor: dangerColor,
+            borderColor: dangerColor,
+            borderRadius: 4,
+            maxBarThickness: 24
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { 
+              grid: { color: gridColor }, 
+              ticks: { color: textColor },
+              grace: '10%'
+            },
+            y: { 
+              grid: { display: false }, 
+              ticks: { color: textColor }
+            }
+          }
+        }
+      });
+
     } catch (err) {
       console.error(err);
     } finally {
@@ -200,10 +441,12 @@ window.SupplierCharts = (function () {
     const themeToggle = document.getElementById('theme-toggle-btn');
     if (themeToggle) {
       themeToggle.addEventListener('click', () => {
-        setTimeout(render, 100);
+        setTimeout(() => {
+          P.renderActiveTab();
+        }, 100);
       });
     }
   }
 
-  return { initYearSelector, render, bindEvents };
+  return { initYearSelectors, renderReceived, renderReturned, bindEvents };
 })();

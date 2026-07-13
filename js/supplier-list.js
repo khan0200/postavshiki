@@ -114,13 +114,21 @@ window.SupplierList = (function () {
       P.historyPagerBar.classList.add('d-none');
       P.partsPagerBar.classList.add('d-none');
 
-      if (P.incomingChart) {
-        P.incomingChart.destroy();
-        P.incomingChart = null;
+      if (P.receivedQtyChart) {
+        P.receivedQtyChart.destroy();
+        P.receivedQtyChart = null;
       }
-      if (P.returnedChart) {
-        P.returnedChart.destroy();
-        P.returnedChart = null;
+      if (P.topReceivedPartsChart) {
+        P.topReceivedPartsChart.destroy();
+        P.topReceivedPartsChart = null;
+      }
+      if (P.returnedQtyChart) {
+        P.returnedQtyChart.destroy();
+        P.returnedQtyChart = null;
+      }
+      if (P.topReturnedPartsChart) {
+        P.topReturnedPartsChart.destroy();
+        P.topReturnedPartsChart = null;
       }
     }
   }

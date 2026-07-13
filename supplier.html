@@ -143,8 +143,13 @@
                 </button>
               </li>
               <li class="nav-item" role="presentation">
-                <button class="nav-link py-2.5 text-nowrap" id="charts-tab" data-bs-toggle="tab" data-bs-target="#charts-tab-pane" type="button" role="tab" aria-controls="charts-tab-pane" aria-selected="false">
-                  <i class="bi bi-bar-chart-line me-1"></i>Hisobotlar va Statistika
+                <button class="nav-link py-2.5 text-nowrap" id="received-tab" data-bs-toggle="tab" data-bs-target="#received-tab-pane" type="button" role="tab" aria-controls="received-tab-pane" aria-selected="false">
+                  <i class="bi bi-arrow-down-left-square me-1"></i>Qabul qilingan
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link py-2.5 text-nowrap" id="returned-tab" data-bs-toggle="tab" data-bs-target="#returned-tab-pane" type="button" role="tab" aria-controls="returned-tab-pane" aria-selected="false">
+                  <i class="bi bi-arrow-up-right-square me-1"></i>Qaytarilgan
                 </button>
               </li>
             </ul>
@@ -259,19 +264,19 @@
               </div>
             </div>
 
-            <!-- TAB 3: Charts -->
-            <div class="tab-pane fade" id="charts-tab-pane" role="tabpanel" aria-labelledby="charts-tab" tabindex="0">
+            <!-- TAB 3: Qabul qilingan -->
+            <div class="tab-pane fade" id="received-tab-pane" role="tabpanel" aria-labelledby="received-tab" tabindex="0">
               <!-- Filter Selectors -->
               <div class="d-flex flex-wrap align-items-center gap-2 mb-4 bg-body-secondary p-3 rounded-3 border">
                 <div class="d-flex align-items-center gap-1.5 chart-filter-group">
-                  <label for="chart-year" class="small fw-semibold text-muted text-nowrap me-1">Yil:</label>
-                  <select class="form-select form-select-sm chart-filter-select" id="chart-year">
+                  <label for="received-chart-year" class="small fw-semibold text-muted text-nowrap me-1">Yil:</label>
+                  <select class="form-select form-select-sm chart-filter-select" id="received-chart-year">
                     <!-- Auto-populated years -->
                   </select>
                 </div>
                 <div class="d-flex align-items-center gap-1.5 chart-filter-group">
-                  <label for="chart-month" class="small fw-semibold text-muted text-nowrap me-1">Oy tafsilotlari:</label>
-                  <select class="form-select form-select-sm chart-filter-select" id="chart-month">
+                  <label for="received-chart-month" class="small fw-semibold text-muted text-nowrap me-1">Oy tafsilotlari:</label>
+                  <select class="form-select form-select-sm chart-filter-select" id="received-chart-month">
                     <option value="all" selected>Barcha oylar</option>
                     <option value="0">Yanvar</option>
                     <option value="1">Fevral</option>
@@ -290,23 +295,77 @@
               </div>
 
               <div class="row g-4">
-                <div class="col-lg-6">
-                  <div class="card p-3 shadow-sm border border-light-subtle h-100">
+                <div class="col-12">
+                  <div class="card p-3 shadow-sm border border-light-subtle">
                     <h6 class="fw-bold mb-3 d-flex align-items-center">
-                       <i class="bi bi-bar-chart-fill text-primary me-2"></i>Kelib tushgan miqdor
+                       <i class="bi bi-bar-chart-fill text-primary me-2"></i>Qabul qilingan detallar soni
                     </h6>
-                    <div class="chart-container">
-                      <canvas id="incomingChart"></canvas>
+                    <div class="chart-container" style="height: 320px; position: relative;">
+                      <canvas id="receivedQtyChart"></canvas>
                     </div>
                   </div>
                 </div>
-                <div class="col-lg-6">
-                  <div class="card p-3 shadow-sm border border-light-subtle h-100">
+                <div class="col-12">
+                  <div class="card p-3 shadow-sm border border-light-subtle">
                     <h6 class="fw-bold mb-3 d-flex align-items-center">
-                      <i class="bi bi-graph-up-arrow text-danger me-2"></i>Qaytarilgan miqdor
+                      <i class="bi bi-bar-chart-steps text-primary me-2"></i>Eng ko'p qabul qilingan detallar
                     </h6>
-                    <div class="chart-container">
-                      <canvas id="returnedChart"></canvas>
+                    <div class="chart-container" style="height: 350px; position: relative;">
+                      <canvas id="topReceivedPartsChart"></canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 4: Qaytarilgan -->
+            <div class="tab-pane fade" id="returned-tab-pane" role="tabpanel" aria-labelledby="returned-tab" tabindex="0">
+              <!-- Filter Selectors -->
+              <div class="d-flex flex-wrap align-items-center gap-2 mb-4 bg-body-secondary p-3 rounded-3 border">
+                <div class="d-flex align-items-center gap-1.5 chart-filter-group">
+                  <label for="returned-chart-year" class="small fw-semibold text-muted text-nowrap me-1">Yil:</label>
+                  <select class="form-select form-select-sm chart-filter-select" id="returned-chart-year">
+                    <!-- Auto-populated years -->
+                  </select>
+                </div>
+                <div class="d-flex align-items-center gap-1.5 chart-filter-group">
+                  <label for="returned-chart-month" class="small fw-semibold text-muted text-nowrap me-1">Oy tafsilotlari:</label>
+                  <select class="form-select form-select-sm chart-filter-select" id="returned-chart-month">
+                    <option value="all" selected>Barcha oylar</option>
+                    <option value="0">Yanvar</option>
+                    <option value="1">Fevral</option>
+                    <option value="2">Mart</option>
+                    <option value="3">Aprel</option>
+                    <option value="4">May</option>
+                    <option value="5">Iyun</option>
+                    <option value="6">Iyul</option>
+                    <option value="7">Avgust</option>
+                    <option value="8">Sentyabr</option>
+                    <option value="9">Oktyabr</option>
+                    <option value="10">Noyabr</option>
+                    <option value="11">Dekabr</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row g-4">
+                <div class="col-12">
+                  <div class="card p-3 shadow-sm border border-light-subtle">
+                    <h6 class="fw-bold mb-3 d-flex align-items-center">
+                       <i class="bi bi-bar-chart-fill text-danger me-2"></i>Qaytarilgan detallar soni
+                    </h6>
+                    <div class="chart-container" style="height: 320px; position: relative;">
+                      <canvas id="returnedQtyChart"></canvas>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-12">
+                  <div class="card p-3 shadow-sm border border-light-subtle">
+                    <h6 class="fw-bold mb-3 d-flex align-items-center">
+                      <i class="bi bi-bar-chart-steps text-danger me-2"></i>Eng ko'p qaytarilgan detallar
+                    </h6>
+                    <div class="chart-container" style="height: 350px; position: relative;">
+                      <canvas id="topReturnedPartsChart"></canvas>
                     </div>
                   </div>
                 </div>

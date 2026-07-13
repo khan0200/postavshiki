@@ -16,7 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const id = e.target.id;
       if (id === 'history-tab') P.activeTab = 'history';
       else if (id === 'parts-tab') P.activeTab = 'parts';
-      else if (id === 'charts-tab') P.activeTab = 'charts';
+      else if (id === 'received-tab') P.activeTab = 'received';
+      else if (id === 'returned-tab') P.activeTab = 'returned';
 
       await P.renderActiveTab();
     });
@@ -30,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function init() {
     await Promise.all([
       SupplierList.load(),
-      SupplierCharts.initYearSelector()
+      SupplierCharts.initYearSelectors()
     ]);
 
     // Default to empty state on initialization

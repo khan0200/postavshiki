@@ -47,8 +47,10 @@ window.SupplierPage = {
   btnAddPart: null,
 
   // --- Tab - Charts ---
-  chartYearSelect: null,
-  chartMonthSelect: null,
+  receivedChartYearSelect: null,
+  receivedChartMonthSelect: null,
+  returnedChartYearSelect: null,
+  returnedChartMonthSelect: null,
 
   // --- Modals & Forms ---
   supplierModal: null,
@@ -91,13 +93,15 @@ window.SupplierPage = {
 
   // --- State ---
   activeSupplierId: null,
-  activeTab: 'history', // history | parts | charts
+  activeTab: 'history', // history | parts | received | returned
 
   historyState: Utils.createTableState({ sortColumn: 'date', sortOrder: 'desc', pageSize: 30 }),
   partsState: Utils.createTableState({ sortColumn: 'detailId', sortOrder: 'asc', pageSize: 30 }),
 
-  incomingChart: null,
-  returnedChart: null,
+  receivedQtyChart: null,
+  topReceivedPartsChart: null,
+  returnedQtyChart: null,
+  topReturnedPartsChart: null,
 
   /**
    * Caches all the DOM lookups once on page load. Each module reads from
@@ -134,8 +138,10 @@ window.SupplierPage = {
     this.partsPagerBar = document.getElementById('parts-pager-bar');
     this.btnAddPart = document.getElementById('btn-add-part');
 
-    this.chartYearSelect = document.getElementById('chart-year');
-    this.chartMonthSelect = document.getElementById('chart-month');
+    this.receivedChartYearSelect = document.getElementById('received-chart-year');
+    this.receivedChartMonthSelect = document.getElementById('received-chart-month');
+    this.returnedChartYearSelect = document.getElementById('returned-chart-year');
+    this.returnedChartMonthSelect = document.getElementById('returned-chart-month');
 
     this.supplierModalElem = document.getElementById('supplierModal');
     this.supplierModal = new bootstrap.Modal(this.supplierModalElem);
@@ -195,8 +201,10 @@ window.SupplierPage = {
       await SupplierHistory.load();
     } else if (this.activeTab === 'parts') {
       await SupplierParts.load();
-    } else if (this.activeTab === 'charts') {
-      await SupplierCharts.render();
+    } else if (this.activeTab === 'received') {
+      await SupplierCharts.renderReceived();
+    } else if (this.activeTab === 'returned') {
+      await SupplierCharts.renderReturned();
     }
   }
 };
