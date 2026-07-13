@@ -190,7 +190,7 @@ window.SupplierCharts = (function () {
       const topParts = Object.values(partTotals)
         .filter(item => item.total > 0)
         .sort((a, b) => b.total - a.total)
-        .slice(0, 10);
+        .slice(0, 20);
 
       const topLabels = topParts.map(item => {
         const namePart = item.detailName ? ` - ${item.detailName}` : '';
@@ -347,7 +347,7 @@ window.SupplierCharts = (function () {
       const topParts = Object.values(partTotals)
         .filter(item => item.total > 0)
         .sort((a, b) => b.total - a.total)
-        .slice(0, 10);
+        .slice(0, 20);
 
       const topLabels = topParts.map(item => {
         const namePart = item.detailName ? ` - ${item.detailName}` : '';
