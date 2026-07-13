@@ -381,7 +381,7 @@ main.container-fluid {
   
   /* Shrink chart containers slightly to prevent spilling */
   .chart-container {
-    height: 220px !important;
+    height: 320px;
   }
 }
 
