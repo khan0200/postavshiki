@@ -132,7 +132,7 @@ window.SupplierHistory = (function () {
 
         tr.innerHTML = `
           <td>
-            <div class="mb-0"><code class="text-dark fw-semibold">F/N: ${Utils.escapeHtml(rec.fn)}</code></div>
+            <div class="mb-0"><code class="text-body-emphasis fw-semibold">F/N: ${Utils.escapeHtml(rec.fn)}</code></div>
             <div class="text-muted small text-nowrap" style="font-size: 0.75rem;">${Utils.escapeHtml(displayDate)}</div>
           </td>
           <td>
