@@ -90,8 +90,13 @@
                 </div>
                 <div class="form-col-fn col-12 col-sm-6">
                   <label for="rec-fn" class="form-label small fw-semibold">F/N</label>
-                  <input type="text" class="form-control" id="rec-fn" required>
-                  <div class="invalid-feedback">F/N kiritilishi shart.</div>
+                  <div class="position-relative">
+                    <input type="text" class="form-control pe-5" id="rec-fn" required>
+                    <button type="button" class="btn text-danger p-0 position-absolute d-none" id="clear-fn-btn" style="right: 12px; top: 50%; transform: translateY(-50%); z-index: 5; line-height: 1;" title="Tozalash">
+                      <i class="bi bi-x-circle-fill fs-5"></i>
+                    </button>
+                    <div class="invalid-feedback">F/N kiritilishi shart.</div>
+                  </div>
                 </div>
                 <div class="form-col-supplier col-12 col-sm-6">
                   <label for="rec-supplier" class="form-label small fw-semibold">Yetkazib beruvchi</label>
@@ -102,8 +107,11 @@
                 </div>
                 <div class="form-col-detail-id col-12 col-sm-6">
                   <label for="rec-detail-search" class="form-label small fw-semibold">Detal ID</label>
-                  <div class="custom-dropdown-container">
-                    <input type="text" class="form-control" id="rec-detail-search" placeholder="Avval yetkazib beruvchini tanlang..." autocomplete="off" disabled required>
+                  <div class="custom-dropdown-container position-relative">
+                    <input type="text" class="form-control pe-5" id="rec-detail-search" placeholder="Avval yetkazib beruvchini tanlang..." autocomplete="off" disabled required>
+                    <button type="button" class="btn text-danger p-0 position-absolute d-none" id="clear-detail-btn" style="right: 12px; top: 50%; transform: translateY(-50%); z-index: 5; line-height: 1;" title="Tozalash">
+                      <i class="bi bi-x-circle-fill fs-5"></i>
+                    </button>
                     <input type="hidden" id="rec-detail-id" required>
                     <div class="invalid-feedback">Iltimos, to'g'ri Detal ID tanlang.</div>
                     <div class="custom-dropdown-menu" id="rec-detail-dropdown-menu">
@@ -119,8 +127,13 @@
               <div class="row g-3 mb-1">
                 <div class="form-col-qty col-6 col-sm-4">
                   <label for="rec-quantity" class="form-label small fw-semibold">Qabul qilindi</label>
-                  <input type="number" class="form-control" id="rec-quantity" min="1" required>
-                  <div class="invalid-feedback">0 dan katta bo'lishi kerak.</div>
+                  <div class="position-relative">
+                    <input type="number" class="form-control pe-5" id="rec-quantity" min="1" required>
+                    <button type="button" class="btn text-danger p-0 position-absolute d-none" id="clear-qty-btn" style="right: 12px; top: 50%; transform: translateY(-50%); z-index: 5; line-height: 1;" title="Tozalash">
+                      <i class="bi bi-x-circle-fill fs-5"></i>
+                    </button>
+                    <div class="invalid-feedback">0 dan katta bo'lishi kerak.</div>
+                  </div>
                 </div>
                 <div class="form-col-qty col-6 col-sm-4">
                   <label for="rec-checked-qty" class="form-label small fw-semibold">Tekshirildi</label>
@@ -142,7 +155,10 @@
                 <div class="form-col-comments col-sm-6 col-12">
                   <label for="rec-comment" class="form-label small fw-semibold">Izohlar</label>
                   <div class="input-group position-relative">
-                    <input type="text" class="form-control" id="rec-comment" placeholder="Sifat nazorati eslatmalari, tirnalishlar, muammolar..." autocomplete="off">
+                    <input type="text" class="form-control pe-5" id="rec-comment" placeholder="Sifat nazorati eslatmalari, tirnalishlar, muammolar..." autocomplete="off" style="padding-right: 3rem !important;">
+                    <button type="button" class="btn text-danger p-0 position-absolute d-none" id="clear-comment-btn" style="right: 195px; top: 50%; transform: translateY(-50%); z-index: 5; line-height: 1;" title="Tozalash">
+                      <i class="bi bi-x-circle-fill fs-5"></i>
+                    </button>
                     <button class="btn btn-primary" type="button" id="presets-dropdown-btn">Izohlardan tanlang &gt;&gt;&gt;</button>
                     <div class="custom-dropdown-menu" id="predefined-comments-list">
                       <!-- Populated dynamically via JS -->

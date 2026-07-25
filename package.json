@@ -4,10 +4,13 @@
   "private": true,
   "description": "Parts Receiving Management System - static frontend + Vercel API backed by Turso (libSQL)",
   "scripts": {
+    "dev": "node dev-server.js",
+    "start": "node dev-server.js",
     "migrate:firestore-to-turso": "node scripts/migrate-firestore-to-turso.js"
   },
   "dependencies": {
-    "@libsql/client": "^0.14.0"
+    "@libsql/client": "^0.14.0",
+    "express": "^5.2.1"
   },
   "devDependencies": {
     "dotenv": "^16.4.5",

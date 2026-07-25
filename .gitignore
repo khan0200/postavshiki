@@ -3,3 +3,5 @@ node_modules/
 .env
 .env.local
 scripts/firebase-service-account.json
+local.db
+*.db

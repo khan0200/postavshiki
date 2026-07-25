@@ -16,6 +16,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const detailIdHidden = document.getElementById('rec-detail-id');
   const detailNameInput = document.getElementById('rec-detail-name');
   const detailDropdownMenu = document.getElementById('rec-detail-dropdown-menu');
+  const clearDetailBtn = document.getElementById('clear-detail-btn');
+  const clearFnBtn = document.getElementById('clear-fn-btn');
+  const clearQtyBtn = document.getElementById('clear-qty-btn');
+  const clearCommentBtn = document.getElementById('clear-comment-btn');
 
   const qtyInput = document.getElementById('rec-quantity');
   const checkedQtyInput = document.getElementById('rec-checked-qty');
@@ -80,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCommentPresets('');
         commentPresetsList.classList.remove('show');
         commentInput.focus();
+        updateClearCommentBtnVisibility();
       });
       fragment.appendChild(el);
     });
@@ -143,6 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       commentPresetsList.classList.remove('show');
     }
+    updateClearCommentBtnVisibility();
   });
 
   const dropdownToggle = document.getElementById('presets-dropdown-btn');
@@ -172,7 +178,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
       commentInput.focus();
+      updateClearCommentBtnVisibility();
     });
+  });
+
+  // F/N input event listener for clear button toggle
+  fnInput.addEventListener('input', () => {
+    updateClearFnBtnVisibility();
   });
 
   // --- SEARCHABLE DETAIL ID DROPDOWN (shared component) ---
@@ -193,6 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
       detailNameInput.textContent = part.detailName;
       detailDropdownMenu.classList.remove('show');
       detailSearch.classList.remove('is-invalid');
+      updateClearDetailBtnVisibility();
     },
     emptyText: 'Detallar topilmadi'
   });
@@ -206,6 +219,101 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Helper to toggle Clear Detail ID button visibility
+  function updateClearDetailBtnVisibility() {
+    if (clearDetailBtn) {
+      if (detailSearch.value.trim() !== '') {
+        clearDetailBtn.classList.remove('d-none');
+      } else {
+        clearDetailBtn.classList.add('d-none');
+      }
+    }
+  }
+
+  // Helper to toggle Clear F/N button visibility
+  function updateClearFnBtnVisibility() {
+    if (clearFnBtn) {
+      if (fnInput.value.trim() !== '') {
+        clearFnBtn.classList.remove('d-none');
+      } else {
+        clearFnBtn.classList.add('d-none');
+      }
+    }
+  }
+
+  // Helper to toggle Clear Qty button visibility
+  function updateClearQtyBtnVisibility() {
+    if (clearQtyBtn) {
+      if (qtyInput.value.trim() !== '') {
+        clearQtyBtn.classList.remove('d-none');
+      } else {
+        clearQtyBtn.classList.add('d-none');
+      }
+    }
+  }
+
+  // Helper to toggle Clear Comment button visibility
+  function updateClearCommentBtnVisibility() {
+    if (clearCommentBtn) {
+      if (commentInput.value.trim() !== '') {
+        clearCommentBtn.classList.remove('d-none');
+      } else {
+        clearCommentBtn.classList.add('d-none');
+      }
+    }
+  }
+
+  // Clear Detail ID button click handler
+  if (clearDetailBtn) {
+    clearDetailBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      detailSearch.value = '';
+      detailIdHidden.value = '';
+      detailNameInput.textContent = '';
+      detailDropdownMenu.classList.remove('show');
+      detailSearch.classList.remove('is-invalid');
+      updateClearDetailBtnVisibility();
+      detailSearch.focus();
+    });
+  }
+
+  // Clear F/N button click handler
+  if (clearFnBtn) {
+    clearFnBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      fnInput.value = '';
+      fnInput.classList.remove('is-invalid');
+      updateClearFnBtnVisibility();
+      fnInput.focus();
+    });
+  }
+
+  // Clear Qty button click handler
+  if (clearQtyBtn) {
+    clearQtyBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      qtyInput.value = '';
+      qtyInput.classList.remove('is-invalid');
+      updateClearQtyBtnVisibility();
+      qtyInput.focus();
+    });
+  }
+
+  // Clear Comment button click handler
+  if (clearCommentBtn) {
+    clearCommentBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      commentInput.value = '';
+      commentInput.classList.remove('is-invalid');
+      updateClearCommentBtnVisibility();
+      commentInput.focus();
+    });
+  }
+
   // --- SEARCHABLE DETAIL ID DROPDOWN LOGIC ---
   supplierSelect.addEventListener('change', async () => {
     const selectedSupplierId = supplierSelect.value;
@@ -214,6 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
     detailSearch.value = '';
     detailIdHidden.value = '';
     detailNameInput.textContent = '';
+    updateClearDetailBtnVisibility();
 
     if (selectedSupplierId) {
       detailSearch.disabled = true;
@@ -248,6 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Hidden ID becomes invalid when user is actively typing, unless it matches exactly
     detailIdHidden.value = '';
     detailNameInput.textContent = '';
+    updateClearDetailBtnVisibility();
 
     const query = detailSearch.value.trim().toUpperCase();
 
@@ -276,6 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!e.target.closest('.custom-dropdown-container')) {
       if (!detailIdHidden.value) {
         detailSearch.value = '';
+        updateClearDetailBtnVisibility();
       }
     }
     // Hide Comment presets dropdown on outside click
@@ -303,6 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
     detailSearch.placeholder = 'Avval yetkazib beruvchini tanlang...';
     detailIdHidden.value = '';
     detailNameInput.textContent = '';
+    updateClearDetailBtnVisibility();
 
     qtyInput.value = '';
     commentInput.value = '';
@@ -315,49 +427,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // Hide the clear button
     clearFormBtn.classList.add('d-none');
 
+    // Reset our clear buttons
+    updateClearFnBtnVisibility();
+    updateClearQtyBtnVisibility();
+    updateClearCommentBtnVisibility();
+
     fnInput.focus();
   });
 
   // --- QUANTITIES AUTO-VALIDATION HELPER ---
   qtyInput.addEventListener('input', () => {
-    const qtyStr = qtyInput.value;
-
-    if (qtyStr !== '') {
-      const qty = Number(qtyStr);
-      // Auto-cap checked quantity only if it exceeds the new received quantity
-      if (checkedQtyInput.value !== '' && Number(checkedQtyInput.value) > qty) {
-        checkedQtyInput.value = qty;
-      }
-    }
-
-    if (checkedQtyInput.value !== '' && Number(returnedQtyInput.value) > Number(checkedQtyInput.value)) {
-      returnedQtyInput.value = checkedQtyInput.value;
-    }
-
     updateClearBtnVisibility();
-  });
-
-  checkedQtyInput.addEventListener('input', () => {
-    if (qtyInput.value !== '') {
-      const qty = Number(qtyInput.value);
-      const checked = Number(checkedQtyInput.value);
-
-      if (checked > qty) {
-        checkedQtyInput.value = qty;
-      }
-    }
-    if (checkedQtyInput.value !== '' && Number(returnedQtyInput.value) > Number(checkedQtyInput.value)) {
-      returnedQtyInput.value = checkedQtyInput.value;
-    }
-  });
-
-  returnedQtyInput.addEventListener('input', () => {
-    if (checkedQtyInput.value !== '') {
-      const checked = Number(checkedQtyInput.value);
-      if (Number(returnedQtyInput.value) > checked) {
-        returnedQtyInput.value = checked;
-      }
-    }
+    updateClearQtyBtnVisibility();
   });
 
   // --- FORM VALIDATION & SUBMISSION ---
@@ -429,6 +510,12 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       await ReceivingRepository.add(record);
       UI.showToast('Qabul qilish yozuvi muvaffaqiyatli saqlandi!');
+
+      // Clear Detal ID fields
+      detailSearch.value = '';
+      detailIdHidden.value = '';
+      detailNameInput.textContent = '';
+      updateClearDetailBtnVisibility();
 
       // Keep last entered inputs in the form, just clear the validation formatting styles
       form.classList.remove('was-validated');
